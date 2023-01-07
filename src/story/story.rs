@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::sync::Arc;
+use std::ops::Deref;
 
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::CommandResult;
@@ -8,7 +9,6 @@ use serenity::prelude::*;
 use tokio::sync::RwLock;
 
 use super::story_parser::StoryParse;
-
 
 pub struct StoryListener<'a> {
     listener: UserId,
@@ -23,6 +23,14 @@ pub struct StoryBlock {
     pub key: String,
     pub key_label: String,
     pub paths: Vec<Arc<StoryBlock>>
+}
+
+impl Deref for StoryBlock {
+    type Target = Vec<Arc<StoryBlock>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.paths
+    }
 }
 
 impl StoryBlock {
@@ -57,7 +65,7 @@ impl StoryBlock {
         let mut filtered_stories = Vec::new();
         for x in stories {
             if ids.contains(&x.id) {
-                let a = x.to_owned();
+                let a = x.clone();
                 let b = Arc::new(a);
                 filtered_stories.push(b);
             }

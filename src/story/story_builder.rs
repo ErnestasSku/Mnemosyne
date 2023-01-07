@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::story::{story::{StoryBlock}, story_parser};
 
 use tracing::{error};
@@ -33,9 +35,11 @@ pub fn build_story(file: &str) -> Result<Box<StoryBlock>, String> {
         // *x = *x.map_story(&story_blocks, &parsed);
     // }
 
-    let story_blocks: Vec<StoryBlock> = story_blocks
-        .iter_mut()
-        .map(|x| x.map_story(&story_blocks, &parsed))
+    let copied = story_blocks.clone();
+
+    let story_blocks: Arc<Vec<StoryBlock>> = story_blocks
+        .iter()
+        .map(|x| Arc::new(*x.map_story(&copied, &parsed)))
         .collect();
 
 
