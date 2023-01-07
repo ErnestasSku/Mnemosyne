@@ -1,4 +1,5 @@
 mod commands;
+mod story;
 
 use std::collections::{HashSet, HashMap};
 use std::env;
@@ -16,7 +17,7 @@ use tracing::{error, info};
 
 use crate::commands::owner::*;
 use crate::commands::math::*;
-use crate::commands::story::*;
+use crate::story::story::*;
 
 pub struct ShardManagerContainer;
 

@@ -2,7 +2,7 @@ extern crate nom;
 use nom::{
     IResult,
     bytes::complete::{tag, take_while},
-    sequence::{tuple, delimited}, character::{complete::{alphanumeric1, multispace0}}, multi::many0
+    sequence::{tuple, delimited}, character::complete::{alphanumeric1, multispace0}, multi::many0
 };
 
 
@@ -20,7 +20,11 @@ pub struct Path {
     pub label: String,
 }
 
+impl StoryParse {
 
+    // pub fn map_story()
+
+}
 
 
 fn story_id(input: &str) -> IResult<&str, String> {
@@ -85,7 +89,7 @@ fn is_not_bracket(chr: char) -> bool {
 
 #[cfg(test)]
 mod test {    
-    use crate::*;
+    use crate::story::story_parser::*;
 
     #[test]
     fn test_id() {
