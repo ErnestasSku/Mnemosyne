@@ -22,6 +22,7 @@ pub struct StoryBlock {
     
     pub key: String,
     pub key_label: String,
+    
     pub paths: Vec<Arc<StoryBlock>>
 }
 

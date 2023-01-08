@@ -8,3 +8,14 @@ You enter a forest.
 You go west
 \East (east){east}
 
+[EAST1]
+You reached the end
+\ (){}
+
+[Lay]
+You reached the end
+\ (){}
+
+[East]
+Game over
+\ (){}

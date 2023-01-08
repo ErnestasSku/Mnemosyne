@@ -2,7 +2,7 @@ extern crate nom;
 use nom::{
     IResult,
     bytes::complete::{tag, take_while},
-    sequence::{tuple, delimited}, character::complete::{alphanumeric1, multispace0}, multi::many0
+    sequence::{tuple, delimited}, character::complete::{alphanumeric1, multispace0, alphanumeric0}, multi::many0
 };
 
 
@@ -22,7 +22,6 @@ pub struct Path {
 
 impl StoryParse {
 
-    // pub fn map_story()
 
 }
 
@@ -41,8 +40,8 @@ fn story_text(input: &str) -> IResult<&str, String> {
 
 fn story_command(input: &str) -> IResult<&str, Path> {
     tuple((
-        tag("\\"), alphanumeric1, multispace0,
-        delimited(tag("("), alphanumeric1, tag(")")), multispace0,
+        tag("\\"), alphanumeric0, multispace0,
+        delimited(tag("("), alphanumeric0, tag(")")), multispace0,
         delimited(tag("{"), take_while(is_not_bracket)  , tag("}")), multispace0,
     ))
     (input)

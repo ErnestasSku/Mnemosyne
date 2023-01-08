@@ -3,6 +3,7 @@ mod story;
 
 use std::collections::{HashSet, HashMap};
 use std::env;
+use std::hash::Hash;
 use std::sync::Arc;
 
 use serenity::async_trait;
@@ -13,6 +14,7 @@ use serenity::http::Http;
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
+use story::story2::StoryContainer2;
 use tracing::{error, info};
 
 use crate::commands::owner::*;
@@ -80,7 +82,7 @@ async fn main() {
         let mut data = client.data.write().await;
         data.insert::<ShardManagerContainer>(client.shard_manager.clone());
         data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
-    
+        data.insert::<StoryContainer2>(Arc::new(RwLock::new(HashMap::default())));
     }
 
     let shard_manager = client.shard_manager.clone();

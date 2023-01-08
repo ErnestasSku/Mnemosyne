@@ -37,10 +37,10 @@ pub fn build_story(file: &str) -> Result<Box<StoryBlock>, String> {
 
     let copied = story_blocks.clone();
 
-    let story_blocks: Arc<Vec<StoryBlock>> = story_blocks
-        .iter()
-        .map(|x| Arc::new(*x.map_story(&copied, &parsed)))
-        .collect();
+    // let story_blocks: Arc<Vec<StoryBlock>> = story_blocks
+    //     .iter()
+    //     .map(|x| Arc::new(*x.map_story(&copied, &parsed)))
+    //     .collect();
 
 
     // let head;
