@@ -19,7 +19,5 @@ dotenv = "0.15.0"
 tracing = "0.1.23"
 tracing-subscriber = "0.2"
 
-slab_tree = "0.3.2"
 
 nom = "7.1.2"
-r3bl_rs_utils = "0.9.3"
