@@ -1,125 +1,66 @@
-use std::rc::Rc;
+use std::path::Path;
 use std::sync::Arc;
-use std::ops::Deref;
 
 use serenity::framework::standard::macros::command;
-use serenity::framework::standard::CommandResult;
+use serenity::framework::standard::{CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use tokio::sync::RwLock;
 
-use super::story_parser::StoryParse;
+use crate::story::story2::{StoryContainer2, StoryBlock2};
+use crate::story::story_builder::map_stories;
 
-pub struct StoryListener<'a> {
-    listener: UserId,
-    current_story_path: &'a StoryBlock
+
+
+pub struct StoryListener {
+    _current_story_path: Arc<StoryBlock2>
 }
 
-#[derive(Debug, Clone)]
-pub struct StoryBlock {
-    pub id: String,
-    pub text: String,
-    
-    pub key: String,
-    pub key_label: String,
-    
-    pub paths: Vec<Arc<StoryBlock>>
+pub struct StoryListenerContainer;
+impl TypeMapKey for StoryListenerContainer {
+    type Value = Arc<RwLock<std::collections::HashMap<UserId, StoryListener>>>;
 }
 
-impl Deref for StoryBlock {
-    type Target = Vec<Arc<StoryBlock>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.paths
-    }
-}
-
-impl StoryBlock {
-    pub fn new(text: &str) -> StoryBlock {
-        StoryBlock { 
-            text: text.to_string() , 
-            paths: Vec::new(),
-            id: String::new(),
-            key: String::new(),
-            key_label: String::new()
-        }
-    }
-
-    pub fn from_parse(parse: &StoryParse) -> StoryBlock {
-        StoryBlock { 
-            id: String::from(&parse.id), 
-            text: String::from(&parse.content), 
-            key: "".into(), 
-            key_label: "".into(), 
-            paths: vec!() 
-        }
-    }
-
-    pub fn map_story(mut self, stories: &Vec<StoryBlock>, parses: &Vec<StoryParse>) -> StoryBlock {
-
-        let ids :Vec<String> = parses
-            .iter()
-            .filter(|x| x.id == self.id)
-            .map(|x| String::from(&x.id))
-            .collect();
-
-        let mut filtered_stories = Vec::new();
-        for x in stories {
-            if ids.contains(&x.id) {
-                let a = x.clone();
-                let b = Arc::new(a);
-                filtered_stories.push(b);
-            }
-        }
-
-        self.paths = filtered_stories;
-        self
-    }
-}
-
-
-pub struct StoryContainer;
-
-impl TypeMapKey for StoryContainer {
-    type Value = Arc<RwLock<std::collections::HashMap<String, StoryBlock>>>;
-} 
 
 
 #[command]
+#[aliases("start-story", "begin-story")]
 async fn start_story(_ctx: &Context, _msg: &Message) -> CommandResult {
 
     Ok(())
 }
 
 #[command]
-async fn load(ctx: &Context, _msg: &Message) -> CommandResult {
-    let head = StoryBlock {
-        id: String::new(),
-        key: String::new(),
-        key_label: String::new(),
-        text: "The beginning of the story".to_string(),
-        paths: vec![
-            Arc::new(StoryBlock::new("The left path")),
-            Arc::new(StoryBlock::new("The middle path")),
-            Arc::new(StoryBlock::new("The right path")),
-        ]
-    };
+async fn load(ctx: &Context, msg: &Message) -> CommandResult {
 
-    let story_lock = {
-        let data_read = ctx.data.read().await;
+    let file_path = &msg.content;
+    let story = map_stories(file_path);
+    let file_name = Path::new(file_path);
+    let file_name = file_name.file_name().unwrap().to_str().unwrap().to_string();
 
-        data_read.get::<StoryContainer>().expect("Expected StoryBlock in TypeMap.").clone()
-    };
-    
-    println!("load - outter");
-
-    {
-        println!("load");
-        let mut stories = story_lock.write().await;
-        
-        stories.insert("head".to_string(), head);
-        println!("{:?}", &stories);
+    match story {
+        Ok(story) => {
+            let story_lock = {
+                let data_read = ctx.data.read().await;
+                data_read.get::<StoryContainer2>().expect("Expected StoryContainer2 in TypeMap").clone()
+            };
+            {
+                let mut stories = story_lock.write().await;
+                stories.insert(file_name, story);
+            }
+            
+        },
+        Err(err) => {
+            msg.reply(ctx, err).await?;
+            return Ok(());
+        }
     }
+
+    Ok(())
+}
+
+#[command]
+async fn read_loaded(_ctx: &Context, _msg: &Message) -> CommandResult {
 
 
 
@@ -127,20 +68,7 @@ async fn load(ctx: &Context, _msg: &Message) -> CommandResult {
 }
 
 #[command]
-async fn read(ctx: &Context, _msg: &Message) -> CommandResult {
-
-    let story_lock = {
-        let data_read = ctx.data.read().await;
-
-        data_read.get::<StoryContainer>().expect("Expected StoryBlock in TypeMap.").clone()
-    };
-
-    {
-        let stories = story_lock.read().await;
-        
-        println!("{:?}", stories);
-        println!("{:?}", stories.get("head"));
-    }
+async fn set_story(_ctx: &Context, _msg: &Message) -> CommandResult {
 
     Ok(())
 }

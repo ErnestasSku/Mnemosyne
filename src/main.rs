@@ -3,7 +3,6 @@ mod story;
 
 use std::collections::{HashSet, HashMap};
 use std::env;
-use std::hash::Hash;
 use std::sync::Arc;
 
 use serenity::async_trait;
@@ -42,15 +41,13 @@ impl EventHandler for Handler {
 
 
 #[group]
-#[commands(load, read, multiply, quit)]
+#[commands(load, read_loaded, start_story, multiply, quit)]
 struct General;
 
 #[tokio::main]
 async fn main() {
 
     dotenv::dotenv().expect("Failed to load .env file");
-
-    // tracing_subscriber::fmt::init();
 
     let token = env::var("TOKEN").expect("Expected a token in the environment");
     let http = Http::new(&token);
@@ -78,11 +75,12 @@ async fn main() {
         .await
         .expect("Err creating client");
 
+    //Data inserts
     {
         let mut data = client.data.write().await;
         data.insert::<ShardManagerContainer>(client.shard_manager.clone());
-        data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
         data.insert::<StoryContainer2>(Arc::new(RwLock::new(HashMap::default())));
+        data.insert::<StoryListenerContainer>(Arc::new(RwLock::new(HashMap::default())));
     }
 
     let shard_manager = client.shard_manager.clone();

@@ -29,11 +29,6 @@ impl StoryBlock2 {
             path: Vec::new(),
         }
     }
-
-    pub fn set_paths(mut self, paths: Vec<(Arc<StoryBlock2>, String, String)>) -> Self {
-        self.path = paths;
-        self
-    }
 }
 
 pub struct StoryContainer2;

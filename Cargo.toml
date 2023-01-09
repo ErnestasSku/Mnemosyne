@@ -10,9 +10,7 @@ default-run = "bot"
 name = "bot"
 path = "src/main.rs"
 
-[[bin]]
-name = "test"
-path = "src/tst.rs"
+
 
 [dependencies]
 serenity = "0.11"

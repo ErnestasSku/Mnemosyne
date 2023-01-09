@@ -1,56 +1,84 @@
-use std::sync::Arc;
+use std::{sync::Arc, fs};
 
-use crate::story::{story::{StoryBlock}, story_parser};
+use crate::story::{story_parser::*, story2::StoryBlock2};
 
-use tracing::{error};
+// use tracing::{error};
 
-pub fn build_story(file: &str) -> Result<Box<StoryBlock>, String> {
-    let parsed = story_parser::story(file);
 
-    println!("{:?}", &parsed);
+fn find_paths(id: String, parsed: &Vec<StoryParse>) -> Vec<(String, String, String)> {
+    let mut res = Vec::new();
+    for x in parsed.iter() {
+        if x.id == id {
 
-    if let Err(err) = parsed {
-        error!("{}", err);
-        return Err("Could not parse the file correctly".to_owned());
+
+            for y in x.children.iter() {
+                res.push(
+                    (y.next_path.clone(),
+                    y.command.clone(),
+                    y.label.clone())
+                );
+            }
+
+        }
+    }
+    res
+}
+
+fn find_blocks(ids: Vec<(String, String, String)>, blocks: &Vec<StoryBlock2>, ) -> Vec<(Arc<StoryBlock2>, String, String)>{
+    let mut res = Vec::new();
+    for x in blocks.iter() {
+
+        for t in ids.iter() {
+            if t.0 == x.id {
+                let arc = Arc::new(x.clone());
+                res.push(
+                    (arc,
+                    t.1.clone(),
+                    t.2.clone()
+                    ));
+            }
+        }
+    }
+    res
+}
+
+pub fn map_stories(file: &String) -> Result<StoryBlock2, String> {
+    let file = fs::read_to_string(file);
+    if let Err(error) = file {
+        return  Err("Error happened during file read".to_string() + &error.to_string());
     }
 
-    let (rem, parsed) = parsed.unwrap();
+    let file_s = &file.unwrap()[..];
 
-    if rem != "" {
-        let s = "Unparsed fully".to_owned() + &rem;
-        return Err(s);
-    }
+    let parsed = story(file_s);
+    let (_, parsed) = parsed.unwrap();
 
-    let story_blocks: Vec<StoryBlock> = parsed
-        .iter()
-        .map(|x| StoryBlock::from_parse(x))
+    let mut story_blocks: Vec<StoryBlock2> = parsed.
+        iter()
+        .map(|x| StoryBlock2::from_parse(x))
         .collect();
 
-    // let new_story: Vec<StoryBlock> = story_blocks
-    //     .iter()
-    //     .map(|x| x.map_story(story_blocks, &parsed))
-    //     .collect();
+    for x in parsed.iter() {
+        println!("{:?}\n", x);
+    }
 
-    // for x in story_blocks.iter() {
-        // *x = *x.map_story(&story_blocks, &parsed);
-    // }
+    let mut copied: Vec<StoryBlock2> = Vec::new();
+    for x in story_blocks.iter() {
+        copied.push(x.clone());
+    }
 
-    let copied = story_blocks.clone();
-
-    // let story_blocks: Arc<Vec<StoryBlock>> = story_blocks
-    //     .iter()
-    //     .map(|x| Arc::new(*x.map_story(&copied, &parsed)))
-    //     .collect();
-
-
-    // let head;
-    // for x in story_blocks.iter() {
-    //     if x.id == "START" {
-    //         head = x;
-    //         break;
-    //     }
-    // }
-
-    // Ok(Box::)
-    Ok(Box::new(StoryBlock::new("a")))
+    for current in story_blocks.iter_mut() {
+        let paths = find_paths(current.id.clone(), &parsed);
+        let paths = find_blocks(paths, &copied);
+        
+        current.path = paths;
+    }
+    
+    let mut head = Err("No story was created".to_string());
+    for x in story_blocks.iter() {
+        if x.id == "START" {
+            head = Ok(x.clone());
+        }
+    }
+    head
 }
