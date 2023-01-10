@@ -14,6 +14,7 @@ pub struct StoryBlock2 {
 }
 
 impl StoryBlock2 {
+
     pub fn new(text: &str) -> StoryBlock2 {
         StoryBlock2 { 
             text: text.to_string() , 
@@ -29,11 +30,27 @@ impl StoryBlock2 {
             path: Vec::new(),
         }
     }
+
+    pub fn present(&self) -> String {
+        let mut built_story = String::new();
+
+        built_story = self.text.clone() + "\n";
+        for i in self.path.iter() {
+            // built_story
+            let command = format!("{} - {}\n", i.1, i.2);
+            built_story = built_story + &command;
+        }
+
+        built_story
+    }
+
+
+
 }
 
 pub struct StoryContainer2;
 
 impl TypeMapKey for StoryContainer2 {
-    type Value = Arc<RwLock<std::collections::HashMap<String, StoryBlock2>>>;
+    type Value = Arc<RwLock<std::collections::HashMap<String, Arc<StoryBlock2>>>>;
 }
 

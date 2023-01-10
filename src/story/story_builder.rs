@@ -45,7 +45,7 @@ fn find_blocks(ids: Vec<(String, String, String)>, blocks: &Vec<StoryBlock2>, ) 
 pub fn map_stories(file: &String) -> Result<StoryBlock2, String> {
     let file = fs::read_to_string(file);
     if let Err(error) = file {
-        return  Err("Error happened during file read".to_string() + &error.to_string());
+        return  Err("Error happened during file read: ".to_string() + &error.to_string());
     }
 
     let file_s = &file.unwrap()[..];
