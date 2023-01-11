@@ -11,13 +11,14 @@ use crate::story::story2::{StoryContainer2, StoryBlock2};
 use crate::story::story_builder::map_stories;
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StoryListener {
     current_story_path: Option<Arc<StoryBlock2>>
 }
 
 impl StoryListener {
     pub fn new(story: &Arc<StoryBlock2>) -> StoryListener {
+        println!("\n-------\nNEW POINTED BLOCK {:#?}", story);
         StoryListener { current_story_path: Some(story.clone()) }
     }
 }
@@ -58,14 +59,13 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
             Some(story) => {
                 let mut user_map = user_lock.write().await;
                 
-                //FIXME: This fails the first time for some reason
-                let insert = user_map.insert(msg.author.id, StoryListener::new(&story));
-                
-                println!("{:?}", &insert);
-                //Possibly create a new thread and start the story there
-                let insert = insert.unwrap();
-                let content = insert.current_story_path.and_then(|x| Some(x.present())).unwrap();
+                let new_story = StoryListener::new(&story);
+
+                let content = new_story.clone().current_story_path.and_then(|x| Some(x.present())).unwrap();
                 msg.reply(ctx, content).await?;
+                
+                user_map.insert(msg.author.id, new_story);
+                
             }
         }
 
@@ -129,17 +129,23 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                             }
                     }
                 }
+                
                 // user = new_user_value;
 
-                println!("{:?}", &user);
-                println!("{:?}", &new_user_value);
+                // println!("{:?}", &user);
+                // println!("{:?}", &new_user_value);
                 if new_user_value.is_some() {
-                    let val = user_map.insert(msg.author.id.clone(), new_user_value.unwrap());
-                    if let Some(st) = &val {
+                    //TODO Notes about the insert. It returns old value. ANd if the key did not exist it returns None
+                    let temp = new_user_value.clone();
+                    user_map.insert(msg.author.id.clone(), new_user_value.unwrap());
+                    println!("{:?}", &temp);
+                    if let Some(st) = temp {
                         if let Some(message) = &st.current_story_path {
                             
                             msg.reply(ctx, message.present()).await?;
                         }
+                    } else {
+                        println!("It was None");
                     }
                 }
             }

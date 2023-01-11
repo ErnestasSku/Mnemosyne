@@ -59,7 +59,7 @@ pub fn map_stories(file: &String) -> Result<StoryBlock2, String> {
         .collect();
 
     for x in parsed.iter() {
-        println!("{:?}\n", x);
+        println!("{:#?}\n", x);
     }
 
     let mut copied: Vec<StoryBlock2> = Vec::new();

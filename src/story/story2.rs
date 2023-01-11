@@ -32,7 +32,7 @@ impl StoryBlock2 {
     }
 
     pub fn present(&self) -> String {
-        let mut built_story = String::new();
+        let mut built_story;
 
         built_story = self.text.clone() + "\n";
         for i in self.path.iter() {
