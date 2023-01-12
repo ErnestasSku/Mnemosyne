@@ -6,14 +6,14 @@ use nom::{
 };
 
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct StoryParse {
     pub id: String,
     pub content: String,
     pub children: Vec<Path>,
 
 }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Path {
     pub next_path: String,
     pub command: String,
@@ -66,7 +66,7 @@ fn story_block(input: &str) -> IResult<&str, StoryParse> {
     (input)
     .map(|(left_input, (id, text, command))| (left_input,
         StoryParse {
-            id: id,
+            id,
             content: text, 
             children: command
         }

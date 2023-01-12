@@ -50,7 +50,7 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
 
     {
         let story = story_lock.read().await;
-        let story_block = story.as_ref().and_then(|x| Some(x.clone()));
+        let story_block = story.as_ref().cloned();
 
         match story_block {
             None => {
@@ -61,7 +61,7 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
                 
                 let new_story = StoryListener::new(&story);
 
-                let content = new_story.clone().current_story_path.and_then(|x| Some(x.present())).unwrap();
+                let content = new_story.clone().current_story_path.map(|x| x.present()).unwrap();
                 msg.reply(ctx, content).await?;
                 
                 user_map.insert(msg.author.id, new_story);
@@ -78,7 +78,7 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
 #[aliases("action", "do")]
 async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 
-    let command_name = msg.content.to_owned().clone().split(" ").collect::<Vec<&str>>().get(1).and_then(|x| Some(x.to_string()));
+    let command_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
 
     println!("Action - {:?}", &command_name);
 
@@ -95,7 +95,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 
             {
                 let mut user_map = user_lock.write().await;
-                let mut user = user_map.get(&msg.author.id);
+                let user = user_map.get(&msg.author.id);
                 let mut new_user_value = None;
                 match user {
                     None => {
@@ -121,7 +121,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                                     
                                     println!("Index - {index}");
                                     if index == -1 {
-                                        user = None;
+                                        new_user_value = None;
                                     } else {
                                         new_user_value = Some(StoryListener::new(&val.path.lock().unwrap().get(index as usize).unwrap().0));
                                     }
@@ -130,14 +130,10 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                     }
                 }
                 
-                // user = new_user_value;
-
-                // println!("{:?}", &user);
-                // println!("{:?}", &new_user_value);
                 if new_user_value.is_some() {
                     //TODO Notes about the insert. It returns old value. ANd if the key did not exist it returns None
                     let temp = new_user_value.clone();
-                    user_map.insert(msg.author.id.clone(), new_user_value.unwrap());
+                    user_map.insert(msg.author.id, new_user_value.unwrap());
                     println!("{:?}", &temp);
                     if let Some(st) = temp {
                         if let Some(message) = &st.current_story_path {
@@ -162,9 +158,9 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 async fn load(ctx: &Context, msg: &Message) -> CommandResult {
 
     //TODO: there probably is a better way of doing thins
-    let file_path = msg.content.to_owned().clone().split(" ").collect::<Vec<&str>>().get(1).and_then(|x| Some(x.to_string()));
+    let file_path = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
     println!("{:?}", &file_path);
-    if let None = file_path {
+    if file_path.is_none() {
         msg.reply(ctx, "Error occurred during parsing of the command. (File path not supplied?)").await?;
         return Ok(());
     }
@@ -224,8 +220,8 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 async fn set_story(ctx: &Context, msg: &Message) -> CommandResult {
 
      //TODO: there probably is a better way of doing thins
-    let story_name = msg.content.to_owned().clone().split(" ").collect::<Vec<&str>>().get(1).and_then(|x| Some(x.to_string()));
-    if let None = story_name {
+    let story_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
+    if story_name.is_none() {
         msg.reply(ctx, "Error occurred during parsing of the command. (File path not supplied?)").await?;
         return Ok(());
     }

@@ -14,15 +14,6 @@ pub struct StoryBlock2 {
 }
 
 impl StoryBlock2 {
-
-    pub fn new(text: &str) -> StoryBlock2 {
-        StoryBlock2 { 
-            text: text.to_string() , 
-            id: String::new(),
-            path: Mutex::new(Vec::new()),
-        }
-    }
-
     pub fn from_parse(parse: &StoryParse) -> StoryBlock2 {
         StoryBlock2 { 
             id: String::from(&parse.id), 
