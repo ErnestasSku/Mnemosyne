@@ -16,6 +16,6 @@ You reached the end
 You reached the end
 \ (){}
 
-[East]
+[EAST]
 Game over
 \ (){}

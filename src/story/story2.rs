@@ -1,16 +1,16 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use serenity::prelude::TypeMapKey;
 use tokio::sync::RwLock;
 
 use super::story_parser::StoryParse;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct StoryBlock2 {
     pub id: String,
     pub text: String,
     
-    pub path: Vec<(Arc<StoryBlock2>, String, String)>,
+    pub path: Mutex<Vec<(Arc<StoryBlock2>, String, String)>>,
 }
 
 impl StoryBlock2 {
@@ -19,7 +19,7 @@ impl StoryBlock2 {
         StoryBlock2 { 
             text: text.to_string() , 
             id: String::new(),
-            path: Vec::new(),
+            path: Mutex::new(Vec::new()),
         }
     }
 
@@ -27,7 +27,7 @@ impl StoryBlock2 {
         StoryBlock2 { 
             id: String::from(&parse.id), 
             text: String::from(&parse.content), 
-            path: Vec::new(),
+            path: Mutex::new(Vec::new()),
         }
     }
 
@@ -35,7 +35,7 @@ impl StoryBlock2 {
         let mut built_story;
 
         built_story = self.text.clone() + "\n";
-        for i in self.path.iter() {
+        for i in self.path.lock().unwrap().iter() {
             // built_story
             let command = format!("{} - {}\n", i.1, i.2);
             built_story = built_story + &command;
@@ -44,7 +44,7 @@ impl StoryBlock2 {
         built_story
     }
 
-
+    
 
 }
 

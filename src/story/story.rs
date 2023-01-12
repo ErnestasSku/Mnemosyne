@@ -8,7 +8,7 @@ use serenity::prelude::*;
 use tokio::sync::RwLock;
 
 use crate::story::story2::{StoryContainer2, StoryBlock2};
-use crate::story::story_builder::map_stories;
+use crate::story::story_builder::map_stories_p;
 
 
 #[derive(Debug, Clone)]
@@ -111,7 +111,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                                     msg.reply(ctx, "No active story").await?;
                                 },
                                 Some(val) => {
-                                    for (i, data) in val.path.iter().enumerate() {
+                                    for (i, data) in val.path.lock().unwrap().iter().enumerate() {
                                         if data.1 == command {
                                             index = i as i32;
                                         }
@@ -123,7 +123,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                                     if index == -1 {
                                         user = None;
                                     } else {
-                                        new_user_value = Some(StoryListener::new(&val.path.get(index as usize).unwrap().0));
+                                        new_user_value = Some(StoryListener::new(&val.path.lock().unwrap().get(index as usize).unwrap().0));
                                     }
                                 } 
                             }
@@ -169,7 +169,7 @@ async fn load(ctx: &Context, msg: &Message) -> CommandResult {
         return Ok(());
     }
     let file_path = file_path.unwrap();
-    let story = map_stories(&file_path);
+    let story = map_stories_p(&file_path);
     let file_name = Path::new(&file_path);
     let file_name = file_name.file_stem().unwrap().to_str().unwrap().to_string();
 
@@ -182,7 +182,7 @@ async fn load(ctx: &Context, msg: &Message) -> CommandResult {
             
             {
                 let mut map = story_lock.write().await;
-                map.insert(file_name, Arc::new(story));
+                map.insert(file_name, story);
             }
         },
         Err(err) => {
