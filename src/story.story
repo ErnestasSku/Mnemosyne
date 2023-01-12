@@ -6,5 +6,16 @@ You enter a forest.
 
 [WEST1]
 You go west
-\East (east){east}
+\EAST1 (east){east}
 
+[EAST1]
+You reached the end
+\EAST (e){go}
+
+[Lay]
+You reached the end
+\ (){}
+
+[EAST]
+Game over
+\ (){}

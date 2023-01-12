@@ -13,6 +13,7 @@ use serenity::http::Http;
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::prelude::*;
+use story::story2::StoryContainer2;
 use tracing::{error, info};
 
 use crate::commands::owner::*;
@@ -40,15 +41,17 @@ impl EventHandler for Handler {
 
 
 #[group]
-#[commands(load, read, multiply, quit)]
+#[commands(multiply, quit)]
 struct General;
+
+#[group]
+#[commands(start_story, action, load, read_loaded, set_story)]
+struct Story;
 
 #[tokio::main]
 async fn main() {
 
     dotenv::dotenv().expect("Failed to load .env file");
-
-    // tracing_subscriber::fmt::init();
 
     let token = env::var("TOKEN").expect("Expected a token in the environment");
     let http = Http::new(&token);
@@ -65,7 +68,10 @@ async fn main() {
     };
 
     let framework =
-        StandardFramework::new().configure(|c| c.owners(owners).prefix("~")).group(&GENERAL_GROUP);
+        StandardFramework::new().configure(|c| c.owners(owners)
+            .prefix("~"))
+            .group(&GENERAL_GROUP)
+            .group(&STORY_GROUP);
 
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
@@ -76,11 +82,13 @@ async fn main() {
         .await
         .expect("Err creating client");
 
+    //Data inserts
     {
         let mut data = client.data.write().await;
         data.insert::<ShardManagerContainer>(client.shard_manager.clone());
-        data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
-    
+        data.insert::<StoryContainer2>(Arc::new(RwLock::new(HashMap::default())));
+        data.insert::<StoryListenerContainer>(Arc::new(RwLock::new(HashMap::default())));
+        data.insert::<LoadedStoryContainer>(Arc::new(RwLock::new(None)));
     }
 
     let shard_manager = client.shard_manager.clone();
