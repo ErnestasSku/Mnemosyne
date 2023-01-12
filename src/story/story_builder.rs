@@ -1,5 +1,7 @@
 use std::{sync::Arc, fs};
 
+use tracing::warn;
+
 use crate::story::{story_parser::*, story2::StoryBlock2};
 
 
@@ -13,7 +15,11 @@ pub fn map_stories_p(file: &String) -> Result<Arc<StoryBlock2>, String> {
     let file_s = &file.unwrap()[..];
 
     let parsed = story(file_s);
-    let (_, parsed) = parsed.unwrap();
+    let (remaining_string, parsed) = parsed.unwrap();
+
+    if !remaining_string.is_empty() {
+        warn!("Story file was not fully consumed. Remaining part:\n{}", remaining_string);
+    }
 
     let mut story_blocks: Vec<Arc<StoryBlock2>> = parsed.
         iter()
@@ -38,7 +44,6 @@ pub fn map_stories_p(file: &String) -> Result<Arc<StoryBlock2>, String> {
                         p_child.command.clone(),
                         p_child.label.clone()
                     ));
-
                 }
             }
         }

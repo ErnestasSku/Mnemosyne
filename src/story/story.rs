@@ -38,7 +38,8 @@ impl TypeMapKey for LoadedStoryContainer {
 
 
 #[command]
-#[aliases("start-story", "begin-story")]
+#[aliases("start", "begin")]
+#[description = "Lets you start a story which was selected"]
 async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
 
     let (user_lock, story_lock) = {
@@ -76,6 +77,7 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[aliases("action", "do")]
+#[description = "You can make a choice"]
 async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 
     let command_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
@@ -155,6 +157,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[owners_only]
+#[description = "Loads a story file from computer into memory. Usage: ~story load C:\\User\\...\\story_name.story"]
 async fn load(ctx: &Context, msg: &Message) -> CommandResult {
 
     //TODO: there probably is a better way of doing thins
@@ -192,6 +195,7 @@ async fn load(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[owners_only]
+#[description = "Prints a list of loaded stories."]
 async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 
     let story_lock = {
@@ -205,7 +209,8 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
         let message = stories.into_keys()
             .collect::<Vec<String>>()
             .iter()
-            .map(|x| x.to_owned() + "\n")
+            .enumerate()
+            .map(|(i, x)| i.to_string() + ". " +  x + "\n")
             .collect::<Vec<String>>()
             .concat();
 
@@ -217,6 +222,7 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[owners_only]
+#[description = "Selects a story to be played. Usage: ~story set_story storyName"]
 async fn set_story(ctx: &Context, msg: &Message) -> CommandResult {
 
      //TODO: there probably is a better way of doing thins

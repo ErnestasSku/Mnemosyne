@@ -7,11 +7,13 @@ use std::sync::Arc;
 
 use serenity::async_trait;
 use serenity::client::bridge::gateway::ShardManager;
-use serenity::framework::standard::macros::{group};
+use serenity::framework::standard::{Args, CommandResult, help_commands, HelpOptions, CommandGroup};
+use serenity::framework::standard::macros::{group, help};
 use serenity::framework::*;
 use serenity::http::Http;
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
+use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
 use story::story2::StoryContainer2;
 use tracing::{error, info};
@@ -46,6 +48,9 @@ struct General;
 
 #[group]
 #[commands(start_story, action, load, read_loaded, set_story)]
+#[prefixes("story", "s")]
+#[description = "Commands related to the stories"]
+#[default_command(action)]
 struct Story;
 
 #[tokio::main]
@@ -70,6 +75,7 @@ async fn main() {
     let framework =
         StandardFramework::new().configure(|c| c.owners(owners)
             .prefix("~"))
+            .help(&HELP)
             .group(&GENERAL_GROUP)
             .group(&STORY_GROUP);
 
@@ -102,3 +108,19 @@ async fn main() {
         error!("Client error: {:?}", why);
     }
 }
+
+#[help]
+#[command_not_found_text = "Could not find: `{}`."]
+#[max_levenshtein_distance(3)]
+async fn help(
+    context: &Context,
+    msg: &Message,
+    args: Args,
+    help_options: &'static HelpOptions,
+    groups: &[&'static CommandGroup],
+    owners: HashSet<UserId>,
+) -> CommandResult {
+    let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await;
+    Ok(())
+}
+
