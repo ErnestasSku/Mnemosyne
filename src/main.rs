@@ -23,6 +23,7 @@ use std::time::Duration;
 use crate::commands::owner::*;
 use crate::commands::math::*;
 use crate::story::story::*;
+use crate::commands::general::*;
 
 
 const UPDATE_CHECK_PERIOD: Duration = Duration::from_secs(60 * 60 * 24);
@@ -48,7 +49,7 @@ impl EventHandler for Handler {
 
 
 #[group]
-#[commands(action, multiply, quit)]
+#[commands(info, action, multiply, quit)]
 struct General;
 
 #[group]

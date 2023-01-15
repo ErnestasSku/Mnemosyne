@@ -160,7 +160,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 #[description = "Loads a story file from computer into memory. Usage: ~story load C:\\User\\...\\story_name.story"]
 async fn load(ctx: &Context, msg: &Message) -> CommandResult {
 
-    //TODO: there probably is a better way of doing thins
+    //TODO: refactor to use arg
     let file_path = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
     println!("{:?}", &file_path);
     if file_path.is_none() {
@@ -225,7 +225,7 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 #[description = "Selects a story to be played. Usage: ~story set_story storyName"]
 async fn set_story(ctx: &Context, msg: &Message) -> CommandResult {
 
-     //TODO: there probably is a better way of doing thins
+     //TODO: refactor this to use args struct
     let story_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
     if story_name.is_none() {
         msg.reply(ctx, "Error occurred during parsing of the command. (File path not supplied?)").await?;
