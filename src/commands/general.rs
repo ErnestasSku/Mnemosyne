@@ -17,7 +17,9 @@ pub async fn info(ctx: &Context, msg: &Message) -> CommandResult {
     
     Usage for moderators: 
     * To load a story into the memory type: ~story load C:\\file\\path\\to\\story\\file.story
-    * To select a story type ~story set_story storyName";
+    * To select a story type ~story set_story storyName
+    
+    To learn more about the bot or story files check out the repository at https://github.com/ErnestasSku/OldManRs";
 
     msg.channel_id.say(&ctx.http, help_message).await?;
 
