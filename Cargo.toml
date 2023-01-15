@@ -17,6 +17,7 @@ tokio = { version = "1.21.2", features = ["macros", "signal", "rt-multi-thread"]
 dotenv = "0.15.0"
 tracing = "0.1.23"
 tracing-subscriber = "0.2"
+update-informer = { version = "0.6.0", default_features = false, features = ["github"] }
 
 
 nom = "7.1.2"

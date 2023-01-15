@@ -17,10 +17,15 @@ use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
 use story::story2::StoryContainer2;
 use tracing::{error, info};
+use update_informer::{registry, Check};
+use std::time::Duration;
 
 use crate::commands::owner::*;
 use crate::commands::math::*;
 use crate::story::story::*;
+
+
+const UPDATE_CHECK_PERIOD: Duration = Duration::from_secs(60 * 60 * 24);
 
 pub struct ShardManagerContainer;
 
@@ -43,7 +48,7 @@ impl EventHandler for Handler {
 
 
 #[group]
-#[commands(multiply, quit)]
+#[commands(action, multiply, quit)]
 struct General;
 
 #[group]
@@ -55,6 +60,11 @@ struct Story;
 
 #[tokio::main]
 async fn main() {
+
+    let informer = update_informer::new(registry::GitHub, "https://github.com/ErnestasSku/OldManRs", "0.1.0").timeout(UPDATE_CHECK_PERIOD);
+    if let Some(version) = informer.check_version().ok().flatten()  {
+        println!("New version is available: {}", version);
+    }
 
     dotenv::dotenv().expect("Failed to load .env file");
 
