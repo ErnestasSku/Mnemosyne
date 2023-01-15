@@ -5,6 +5,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use serenity::builder::CreateThread;
 use tokio::sync::RwLock;
 
 use crate::story::story2::{StoryContainer2, StoryBlock2};
@@ -41,6 +42,9 @@ impl TypeMapKey for LoadedStoryContainer {
 #[aliases("start", "begin")]
 #[description = "Lets you start a story which was selected"]
 async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
+    
+    let a = msg.channel_id.create_public_thread(ctx, &msg.id, |x| x).await?;
+    a.send_message(ctx, |x| x).await?;
 
     let (user_lock, story_lock) = {
         let data_read = ctx.data.read().await;
@@ -63,6 +67,11 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
                 let new_story = StoryListener::new(&story);
 
                 let content = new_story.clone().current_story_path.map(|x| x.present()).unwrap();
+                
+                // let a = CreateThread::name("test");
+                println!("before crate");
+                let a = msg.channel_id.create_public_thread(ctx, &msg.id, |x| x).await?;
+                a.send_message(ctx, |x| x).await?;
                 msg.reply(ctx, content).await?;
                 
                 user_map.insert(msg.author.id, new_story);
@@ -161,7 +170,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 async fn load(ctx: &Context, msg: &Message) -> CommandResult {
 
     //TODO: there probably is a better way of doing thins
-    let file_path = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
+    let file_path = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(2).map(|x| x.to_string());
     println!("{:?}", &file_path);
     if file_path.is_none() {
         msg.reply(ctx, "Error occurred during parsing of the command. (File path not supplied?)").await?;
@@ -226,7 +235,7 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 async fn set_story(ctx: &Context, msg: &Message) -> CommandResult {
 
      //TODO: there probably is a better way of doing thins
-    let story_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
+    let story_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(2).map(|x| x.to_string());
     if story_name.is_none() {
         msg.reply(ctx, "Error occurred during parsing of the command. (File path not supplied?)").await?;
         return Ok(());

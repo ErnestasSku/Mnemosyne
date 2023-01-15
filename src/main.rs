@@ -79,9 +79,7 @@ async fn main() {
             .group(&GENERAL_GROUP)
             .group(&STORY_GROUP);
 
-    let intents = GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::DIRECT_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT;
+    let intents = GatewayIntents::all();
     let mut client = Client::builder(&token, intents)
         .framework(framework)
         .event_handler(Handler)
