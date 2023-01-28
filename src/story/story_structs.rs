@@ -9,15 +9,15 @@ use super::story_parser::StoryParse;
 pub struct StoryBlock {
     pub id: String,
     pub text: String,
-    
+
     pub path: Mutex<Vec<(Arc<StoryBlock>, String, String)>>,
 }
 
 impl StoryBlock {
     pub fn from_parse(parse: &StoryParse) -> StoryBlock {
-        StoryBlock { 
-            id: String::from(&parse.id), 
-            text: String::from(&parse.content), 
+        StoryBlock {
+            id: String::from(&parse.id),
+            text: String::from(&parse.content),
             path: Mutex::new(Vec::new()),
         }
     }
@@ -34,9 +34,6 @@ impl StoryBlock {
 
         built_story
     }
-
-    
-
 }
 
 pub struct StoryContainer;
@@ -44,4 +41,3 @@ pub struct StoryContainer;
 impl TypeMapKey for StoryContainer {
     type Value = Arc<RwLock<std::collections::HashMap<String, Arc<StoryBlock>>>>;
 }
-

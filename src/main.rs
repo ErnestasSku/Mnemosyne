@@ -1,30 +1,31 @@
 mod commands;
 mod story;
 
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::sync::Arc;
 
 use serenity::async_trait;
 use serenity::client::bridge::gateway::ShardManager;
-use serenity::framework::standard::{Args, CommandResult, help_commands, HelpOptions, CommandGroup};
 use serenity::framework::standard::macros::{group, help};
+use serenity::framework::standard::{
+    help_commands, Args, CommandGroup, CommandResult, HelpOptions,
+};
 use serenity::framework::*;
 use serenity::http::Http;
 use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
+use std::time::Duration;
 use story::story_structs::StoryContainer;
 use tracing::{error, info};
 use update_informer::{registry, Check};
-use std::time::Duration;
 
-use crate::commands::owner::*;
-use crate::commands::math::*;
-use crate::story::story::*;
 use crate::commands::general::*;
-
+use crate::commands::math::*;
+use crate::commands::owner::*;
+use crate::story::story::*;
 
 const UPDATE_CHECK_PERIOD: Duration = Duration::from_secs(60 * 60 * 24);
 
@@ -47,7 +48,6 @@ impl EventHandler for Handler {
     }
 }
 
-
 #[group]
 #[commands(info, action, multiply, quit)]
 struct General;
@@ -61,9 +61,13 @@ struct Story;
 
 #[tokio::main]
 async fn main() {
-
-    let informer = update_informer::new(registry::GitHub, "https://github.com/ErnestasSku/Mnemosyne", "0.1.0").timeout(UPDATE_CHECK_PERIOD);
-    if let Some(version) = informer.check_version().ok().flatten()  {
+    let informer = update_informer::new(
+        registry::GitHub,
+        "https://github.com/ErnestasSku/Mnemosyne",
+        "0.1.0",
+    )
+    .timeout(UPDATE_CHECK_PERIOD);
+    if let Some(version) = informer.check_version().ok().flatten() {
         println!("New version is available: {}", version);
     }
 
@@ -79,16 +83,15 @@ async fn main() {
 
             println!("{:?}", owners);
             (owners, info.id)
-        },
+        }
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
 
-    let framework =
-        StandardFramework::new().configure(|c| c.owners(owners)
-            .prefix("~"))
-            .help(&HELP)
-            .group(&GENERAL_GROUP)
-            .group(&STORY_GROUP);
+    let framework = StandardFramework::new()
+        .configure(|c| c.owners(owners).prefix("~"))
+        .help(&HELP)
+        .group(&GENERAL_GROUP)
+        .group(&STORY_GROUP);
 
     let intents = GatewayIntents::all();
     let mut client = Client::builder(&token, intents)
@@ -109,7 +112,9 @@ async fn main() {
     let shard_manager = client.shard_manager.clone();
 
     tokio::spawn(async move {
-        tokio::signal::ctrl_c().await.expect("Could not register ctrl+c handler");
+        tokio::signal::ctrl_c()
+            .await
+            .expect("Could not register ctrl+c handler");
         shard_manager.lock().await.shutdown_all().await;
     });
 
@@ -132,4 +137,3 @@ async fn help(
     let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await;
     Ok(())
 }
-

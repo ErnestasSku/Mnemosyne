@@ -1,13 +1,10 @@
-
-
 use serenity::framework::standard::macros::command;
-use serenity::framework::standard::{CommandResult};
+use serenity::framework::standard::CommandResult;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 #[command]
 pub async fn info(ctx: &Context, msg: &Message) -> CommandResult {
-
     let help_message = "This is a bot created for story telling.
     
     General usage (note, in this example the prefix used is \"~\"):
