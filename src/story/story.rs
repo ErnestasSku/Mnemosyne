@@ -70,7 +70,7 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
                     .clone()
                     .current_story_path
                     .map(|x| x.present())
-                    .unwrap();
+                    .expect("This should always have a value.");
                 msg.reply(ctx, content).await?;
 
                 user_map.insert(msg.author.id, new_story);
@@ -116,6 +116,7 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                             msg.reply(ctx, "No active story").await?;
                         }
                         Some(val) => {
+                            //Another unwrap related to locks.
                             for (i, data) in val.path.lock().unwrap().iter().enumerate() {
                                 if data.1 == command_name {
                                     index = i as i32;
@@ -129,7 +130,13 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                 new_user_value = None;
                             } else {
                                 new_user_value = Some(StoryListener::new(
-                                    &val.path.lock().unwrap().get(index as usize).unwrap().0,
+                                    //Another unwrap related to locks
+                                    &val.path
+                                        .lock()
+                                        .unwrap()
+                                        .get(index as usize)
+                                        .expect("Story path should always have an index")
+                                        .0,
                                 ));
                             }
                         }
@@ -139,7 +146,10 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
             if new_user_value.is_some() {
                 let temp = new_user_value.clone();
-                user_map.insert(msg.author.id, new_user_value.unwrap());
+                user_map.insert(
+                    msg.author.id,
+                    new_user_value.expect("is_some used, should never fail unwrapping"),
+                );
                 println!("{:?}", &temp);
                 if let Some(st) = temp {
                     if let Some(message) = &st.current_story_path {
@@ -174,29 +184,42 @@ async fn load(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let story = map_stories_p(&file_path);
     let file_name = Path::new(&file_path);
-    let file_name = file_name.file_stem().unwrap().to_str().unwrap().to_string();
+    let file_name = file_name
+        .file_stem()
+        .ok_or(String::from("Failed to get file stem"))?
+        .to_str()
+        .ok_or(String::from(""))
+        .map(|x| x.to_string());
 
-    match story {
-        Ok(story) => {
-            let story_lock = {
-                let data_read = ctx.data.read().await;
-                data_read
-                    .get::<StoryContainer>()
-                    .expect("Expected StoryContainer in TypeMap")
-                    .clone()
-            };
+    match file_name {
+        Ok(file_name) => {
+            match story {
+                Ok(story) => {
+                    let story_lock = {
+                        let data_read = ctx.data.read().await;
+                        data_read
+                            .get::<StoryContainer>()
+                            .expect("Expected StoryContainer in TypeMap")
+                            .clone()
+                    };
 
-            {
-                let mut map = story_lock.write().await;
-                map.insert(file_name, story);
+                    {
+                        let mut map = story_lock.write().await;
+                        map.insert(file_name, story);
+                    }
+                }
+                Err(err) => {
+                    msg.reply(ctx, err).await?;
+                    return Ok(());
+                }
             }
+            msg.reply(ctx, "Loaded successfully").await?;
         }
         Err(err) => {
-            msg.reply(ctx, err).await?;
-            return Ok(());
+            msg.reply(ctx, "Error happened").await?;
+            println!("{}", err);
         }
     }
-    msg.reply(ctx, "Loaded successfully").await?;
     Ok(())
 }
 

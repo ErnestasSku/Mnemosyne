@@ -5,15 +5,12 @@ use tracing::warn;
 use crate::story::{story_parser::*, story_structs::StoryBlock};
 
 pub fn map_stories_p(file: &String) -> Result<Arc<StoryBlock>, String> {
-    let file = fs::read_to_string(file);
-    if let Err(error) = file {
-        return Err("Error happened during file read: ".to_string() + &error.to_string());
-    }
+    let file = fs::read_to_string(file)
+        .map_err(|x| String::from("Error happened during file read: ") + &x.to_string())?;
 
-    let file_s = &file.unwrap()[..];
-
-    let parsed = story(file_s);
-    let (remaining_string, parsed) = parsed.unwrap();
+    let file_s = &file[..];
+    let parsed = story(file_s).map_err(|x| String::from("Parse failed: ") + &x.to_string())?;
+    let (remaining_string, parsed) = parsed;
 
     if !remaining_string.is_empty() {
         warn!(
@@ -56,7 +53,10 @@ pub fn map_stories_p(file: &String) -> Result<Arc<StoryBlock>, String> {
                 paths.push((item.clone(), el.1.clone(), el.2.clone()));
             }
         }
-        *current.path.lock().unwrap() = paths;
+        *current
+            .path
+            .lock()
+            .map_err(|x| String::from("Error occurred during loading: ") + &x.to_string())? = paths;
     }
 
     let mut head = Err("No story was created".to_string());

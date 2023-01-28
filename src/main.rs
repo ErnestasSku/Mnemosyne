@@ -68,7 +68,7 @@ async fn main() {
     )
     .timeout(UPDATE_CHECK_PERIOD);
     if let Some(version) = informer.check_version().ok().flatten() {
-        println!("New version is available: {}", version);
+        println!("New version is available: {}. Go to https://github.com/ErnestasSku/Mnemosyne to update", version);
     }
 
     dotenv::dotenv().expect("Failed to load .env file");
