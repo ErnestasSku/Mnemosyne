@@ -3,6 +3,19 @@
 version = 3
 
 [[package]]
+name = "Mnemosyne"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "nom",
+ "serenity",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "update-informer",
+]
+
+[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -703,19 +716,6 @@ checksum = "0fac9e2da13b5eb447a6ce3d392f23a29d8694bff781bf03a16cd9ac8697593b"
 dependencies = [
  "hermit-abi",
  "libc",
-]
-
-[[package]]
-name = "old_man_rs"
-version = "0.1.0"
-dependencies = [
- "dotenv",
- "nom",
- "serenity",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "update-informer",
 ]
 
 [[package]]

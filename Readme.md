@@ -1,4 +1,4 @@
-# Old Man
+# Mnemosyne
 
 A story teller bot created at the request of Toasty Corner discord server.
 

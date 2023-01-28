@@ -62,7 +62,7 @@ struct Story;
 #[tokio::main]
 async fn main() {
 
-    let informer = update_informer::new(registry::GitHub, "https://github.com/ErnestasSku/OldManRs", "0.1.0").timeout(UPDATE_CHECK_PERIOD);
+    let informer = update_informer::new(registry::GitHub, "https://github.com/ErnestasSku/Mnemosyne", "0.1.0").timeout(UPDATE_CHECK_PERIOD);
     if let Some(version) = informer.check_version().ok().flatten()  {
         println!("New version is available: {}", version);
     }
