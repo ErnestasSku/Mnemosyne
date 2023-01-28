@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use serenity::framework::standard::macros::command;
-use serenity::framework::standard::{CommandResult};
+use serenity::framework::standard::{CommandResult, Args};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use tokio::sync::RwLock;
@@ -76,17 +76,16 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[aliases("action", "do")]
 #[description = "You can make a choice"]
-async fn action(ctx: &Context, msg: &Message) -> CommandResult {
+async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
-    let command_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
+    let command_name = args.single::<String>()?;
 
     println!("Action - {:?}", &command_name);
 
-    match command_name {
-        None => {
+        if command_name.is_empty() {
             msg.reply(ctx, "invalid command").await?;
-        },
-        Some(command) => {
+        }
+        else {
             let user_lock = {
                 let data_read = ctx.data.read().await;
                 data_read.get::<StoryListenerContainer>().expect("Expected StoryListenerContainer in TypeMap").clone()
@@ -111,7 +110,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                                 },
                                 Some(val) => {
                                     for (i, data) in val.path.lock().unwrap().iter().enumerate() {
-                                        if data.1 == command {
+                                        if data.1 == command_name {
                                             index = i as i32;
                                         }
                                         
@@ -144,7 +143,7 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                 }
             }
         }
-    }
+    
 
     
 
@@ -152,18 +151,20 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
-#[owners_only]
+#[allowed_roles("Muse", "muse")]
 #[description = "Loads a story file from computer into memory. Usage: ~story load C:\\User\\...\\story_name.story"]
-async fn load(ctx: &Context, msg: &Message) -> CommandResult {
+async fn load(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
-    //TODO: refactor to use arg
-    let file_path = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
+    println!("{:?}", args);
+    let file_path = args.single::<String>()?;
+    
+
     println!("{:?}", &file_path);
-    if file_path.is_none() {
+    if file_path.is_empty() {
         msg.reply(ctx, "Error occurred during parsing of the command. (File path not supplied?)").await?;
         return Ok(());
     }
-    let file_path = file_path.unwrap();
+
     let story = map_stories_p(&file_path);
     let file_name = Path::new(&file_path);
     let file_name = file_name.file_stem().unwrap().to_str().unwrap().to_string();
@@ -190,7 +191,7 @@ async fn load(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
-#[owners_only]
+#[allowed_roles("Muse", "muse")]
 #[description = "Prints a list of loaded stories."]
 async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 
@@ -217,17 +218,15 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
-#[owners_only]
+#[allowed_roles("Muse", "muse")]
 #[description = "Selects a story to be played. Usage: ~story set_story storyName"]
-async fn set_story(ctx: &Context, msg: &Message) -> CommandResult {
+async fn set_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
-     //TODO: refactor this to use args struct
-    let story_name = msg.content.to_owned().split(' ').collect::<Vec<&str>>().get(1).map(|x| x.to_string());
-    if story_name.is_none() {
+    let story_name = args.single::<String>()?;
+    if story_name.is_empty() {
         msg.reply(ctx, "Error occurred during parsing of the command. (File path not supplied?)").await?;
         return Ok(());
     }
-    let story_name = story_name.unwrap();
     
     let (curr_story_lock, story_lock) = {
         let data_read = ctx.data.read().await;
