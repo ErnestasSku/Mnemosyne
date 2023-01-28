@@ -6,16 +6,16 @@ use tokio::sync::RwLock;
 use super::story_parser::StoryParse;
 
 #[derive(Debug)]
-pub struct StoryBlock2 {
+pub struct StoryBlock {
     pub id: String,
     pub text: String,
     
-    pub path: Mutex<Vec<(Arc<StoryBlock2>, String, String)>>,
+    pub path: Mutex<Vec<(Arc<StoryBlock>, String, String)>>,
 }
 
-impl StoryBlock2 {
-    pub fn from_parse(parse: &StoryParse) -> StoryBlock2 {
-        StoryBlock2 { 
+impl StoryBlock {
+    pub fn from_parse(parse: &StoryParse) -> StoryBlock {
+        StoryBlock { 
             id: String::from(&parse.id), 
             text: String::from(&parse.content), 
             path: Mutex::new(Vec::new()),
@@ -39,9 +39,9 @@ impl StoryBlock2 {
 
 }
 
-pub struct StoryContainer2;
+pub struct StoryContainer;
 
-impl TypeMapKey for StoryContainer2 {
-    type Value = Arc<RwLock<std::collections::HashMap<String, Arc<StoryBlock2>>>>;
+impl TypeMapKey for StoryContainer {
+    type Value = Arc<RwLock<std::collections::HashMap<String, Arc<StoryBlock>>>>;
 }
 

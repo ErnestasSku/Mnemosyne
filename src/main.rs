@@ -15,7 +15,7 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
-use story::story2::StoryContainer2;
+use story::story_structs::StoryContainer;
 use tracing::{error, info};
 use update_informer::{registry, Check};
 use std::time::Duration;
@@ -101,7 +101,7 @@ async fn main() {
     {
         let mut data = client.data.write().await;
         data.insert::<ShardManagerContainer>(client.shard_manager.clone());
-        data.insert::<StoryContainer2>(Arc::new(RwLock::new(HashMap::default())));
+        data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
         data.insert::<StoryListenerContainer>(Arc::new(RwLock::new(HashMap::default())));
         data.insert::<LoadedStoryContainer>(Arc::new(RwLock::new(None)));
     }

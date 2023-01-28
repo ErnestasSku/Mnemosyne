@@ -7,18 +7,17 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use tokio::sync::RwLock;
 
-use crate::story::story2::{StoryContainer2, StoryBlock2};
+use crate::story::story_structs::{StoryContainer, StoryBlock};
 use crate::story::story_builder::map_stories_p;
 
 
 #[derive(Debug, Clone)]
 pub struct StoryListener {
-    current_story_path: Option<Arc<StoryBlock2>>
+    current_story_path: Option<Arc<StoryBlock>>
 }
 
 impl StoryListener {
-    pub fn new(story: &Arc<StoryBlock2>) -> StoryListener {
-        println!("\n-------\nNEW POINTED BLOCK {:#?}", story);
+    pub fn new(story: &Arc<StoryBlock>) -> StoryListener {
         StoryListener { current_story_path: Some(story.clone()) }
     }
 }
@@ -31,8 +30,7 @@ impl TypeMapKey for StoryListenerContainer {
 }
 
 impl TypeMapKey for LoadedStoryContainer {
-    // type Value = Arc<RwLock<Arc<Option<StoryBlock2>>>>;
-    type Value = Arc<RwLock<Option<Arc<StoryBlock2>>>>;
+    type Value = Arc<RwLock<Option<Arc<StoryBlock>>>>;
 }
 
 
@@ -107,7 +105,6 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                     Some(user_prime) => {
                         println!("Inside user_prime block");
                         let mut index = -1;
-                        // for i in user_prime.current_story_path.unwrap_or(Arc::new(StoryBlock2::new("temp"))).path.into_iter() {
                             match &user_prime.current_story_path {
                                 None => {
                                     msg.reply(ctx, "No active story").await?;
@@ -133,7 +130,6 @@ async fn action(ctx: &Context, msg: &Message) -> CommandResult {
                 }
                 
                 if new_user_value.is_some() {
-                    //TODO Notes about the insert. It returns old value. ANd if the key did not exist it returns None
                     let temp = new_user_value.clone();
                     user_map.insert(msg.author.id, new_user_value.unwrap());
                     println!("{:?}", &temp);
@@ -176,7 +172,7 @@ async fn load(ctx: &Context, msg: &Message) -> CommandResult {
         Ok(story) => {
             let story_lock = {
                 let data_read = ctx.data.read().await;
-                data_read.get::<StoryContainer2>().expect("Expected StoryContainer2 in TypeMap").clone()
+                data_read.get::<StoryContainer>().expect("Expected StoryContainer in TypeMap").clone()
             };
             
             {
@@ -200,7 +196,7 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
 
     let story_lock = {
         let data_read = ctx.data.read().await;
-        data_read.get::<StoryContainer2>().expect("Expected StoryContainer2 in TypeMap").clone()
+        data_read.get::<StoryContainer>().expect("Expected StoryContainer in TypeMap").clone()
     };
     {
         let stories = story_lock.read().await.clone();
@@ -237,7 +233,7 @@ async fn set_story(ctx: &Context, msg: &Message) -> CommandResult {
         let data_read = ctx.data.read().await;
 
         (data_read.get::<LoadedStoryContainer>().expect("Expected LoadedStoryContainer in TypeMap").clone(),
-         data_read.get::<StoryContainer2>().expect("Expected StoryContainer2 in TypeMap").clone())
+         data_read.get::<StoryContainer>().expect("Expected  in TypeMap").clone())
     };
 
     {

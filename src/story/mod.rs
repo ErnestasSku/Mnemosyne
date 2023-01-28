@@ -3,4 +3,4 @@ pub mod story;
 pub mod story_parser;
 pub mod story_builder;
 
-pub mod story2;
+pub mod story_structs;

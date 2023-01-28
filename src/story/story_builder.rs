@@ -2,10 +2,10 @@ use std::{sync::Arc, fs};
 
 use tracing::warn;
 
-use crate::story::{story_parser::*, story2::StoryBlock2};
+use crate::story::{story_parser::*, story_structs::StoryBlock};
 
 
-pub fn map_stories_p(file: &String) -> Result<Arc<StoryBlock2>, String> {
+pub fn map_stories_p(file: &String) -> Result<Arc<StoryBlock>, String> {
 
     let file = fs::read_to_string(file);
     if let Err(error) = file {
@@ -21,19 +21,19 @@ pub fn map_stories_p(file: &String) -> Result<Arc<StoryBlock2>, String> {
         warn!("Story file was not fully consumed. Remaining part:\n{}", remaining_string);
     }
 
-    let mut story_blocks: Vec<Arc<StoryBlock2>> = parsed.
+    let mut story_blocks: Vec<Arc<StoryBlock>> = parsed.
         iter()
-        .map(StoryBlock2::from_parse)
+        .map(StoryBlock::from_parse)
         .map(Arc::new)
         .collect();
 
 
     for i in 0..story_blocks.len() {
-        let copied: Vec<Arc<StoryBlock2>> = story_blocks.to_vec();
+        let copied: Vec<Arc<StoryBlock>> = story_blocks.to_vec();
         let current = &mut story_blocks[i];
         
         let mut to_map: Vec<(String, String, String)> = Vec::new();
-        let mut paths: Vec<(Arc<StoryBlock2>, String, String)> = Vec::new();
+        let mut paths: Vec<(Arc<StoryBlock>, String, String)> = Vec::new();
         
         //Find paths from parse
         for p in parsed.iter() {
