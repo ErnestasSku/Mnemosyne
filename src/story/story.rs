@@ -54,6 +54,20 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     {
+
+        println!("before create");
+
+        let a = msg.channel_id.create_public_thread(ctx, msg.id, |x| {
+            x.name("Test name")
+        }).await?;
+        println!("create channel {:?}", a);
+
+        let b = a.send_message(ctx, |x| {
+            x.content("Test message")
+        }).await;
+
+        println!("Send message in thread {:?}", b);
+
         let story = story_lock.read().await;
         let story_block = story.as_ref().cloned();
 
