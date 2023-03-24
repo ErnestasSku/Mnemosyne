@@ -277,7 +277,7 @@ async fn set_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
                 .clone(),
             data_read
                 .get::<StoryContainer>()
-                .expect("Expected  in TypeMap")
+                .expect("Expected in TypeMap")
                 .clone(),
         )
     };
@@ -301,3 +301,37 @@ async fn set_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 
     Ok(())
 }
+
+#[command]
+#[allowed_roles("Muse", "muse")]
+#[description = "Clean up command. Used when story is no longer needed to be loaded in memory."]
+async fn clear_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let story_name = args.single::<String>()?;
+
+    if story_name.is_empty() {
+        msg.reply(ctx, "No story name provided").await?;
+        return Ok(());
+    }
+
+    let story_lock = {
+        let data_read = ctx.data.read().await;
+
+        data_read.get::<StoryContainer>().expect("Expected StoryContainer in TypeMap").clone()
+    };
+
+    {
+        let mut story_map = story_lock.write().await;
+        match story_map.remove(&story_name) {
+            Some(story) => {
+                //TODO: cleanup logic here
+                
+                msg.react(ctx, '👍').await?
+            },
+            None => msg.react(ctx, '👎').await?,
+        };
+    }
+
+    Ok(())
+}
+
+// async fn clear_all()

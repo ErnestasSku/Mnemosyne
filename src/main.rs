@@ -53,7 +53,7 @@ impl EventHandler for Handler {
 struct General;
 
 #[group]
-#[commands(start_story, action, load, read_loaded, set_story)]
+#[commands(start_story, action, load, read_loaded, set_story, clear_story)]
 #[prefixes("story", "s")]
 #[description = "Commands related to the stories"]
 #[default_command(action)]
