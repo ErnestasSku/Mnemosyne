@@ -1,4 +1,7 @@
-use std::{sync::{Arc, Mutex}, collections::HashSet};
+use std::{
+    collections::HashSet,
+    sync::{Arc, Mutex},
+};
 
 use serenity::prelude::TypeMapKey;
 use tokio::sync::RwLock;
@@ -37,12 +40,16 @@ impl StoryBlock {
         built_story
     }
 
-    pub fn story_to_list_unique(story: &Arc<StoryBlock>, visited: &mut HashSet<String>, res: &mut Vec<Arc<StoryBlock>>) {
+    pub fn story_to_list_unique(
+        story: &Arc<StoryBlock>,
+        visited: &mut HashSet<String>,
+        res: &mut Vec<Arc<StoryBlock>>,
+    ) {
         let s = story.id.clone();
-    
+
         visited.insert(s.clone());
         res.push(story.clone());
-    
+
         for i in story.path.lock().unwrap().iter() {
             if !visited.contains(&i.0.id) {
                 StoryBlock::story_to_list_unique(&i.0, visited, res);

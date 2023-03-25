@@ -141,8 +141,7 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                         .get(index as usize)
                                         .expect("Story path should always have an index")
                                         .0,
-                                    
-                                    &current_story
+                                    &current_story,
                                 ));
                             }
                         }
@@ -322,19 +321,30 @@ async fn clear_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
     let (story_lock, listener_lock, loaded_lock) = {
         let data_read = ctx.data.read().await;
 
-        (data_read.get::<StoryContainer>().expect("Expected StoryContainer in TypeMap").clone(),
-        data_read.get::<StoryListenerContainer>().expect("Expected Storylistener in TypeMap").clone(),
-        data_read.get::<LoadedStoryContainer>().expect("Expected LoadedStoryContainer in TypeMap").clone())
+        (
+            data_read
+                .get::<StoryContainer>()
+                .expect("Expected StoryContainer in TypeMap")
+                .clone(),
+            data_read
+                .get::<StoryListenerContainer>()
+                .expect("Expected Storylistener in TypeMap")
+                .clone(),
+            data_read
+                .get::<LoadedStoryContainer>()
+                .expect("Expected LoadedStoryContainer in TypeMap")
+                .clone(),
+        )
     };
 
     {
         let mut story_map = story_lock.write().await;
         match story_map.remove(&story_name) {
-            Some(story) => {                
+            Some(story) => {
                 let mut visited = HashSet::new();
                 let mut to_cleanup = Vec::new();
                 StoryBlock::story_to_list_unique(&story, &mut visited, &mut to_cleanup);
-                
+
                 // Clear story from all users.
                 {
                     let mut listeners = listener_lock.write().await;
@@ -368,7 +378,7 @@ async fn clear_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
                 drop(story);
 
                 msg.react(ctx, '👍').await?
-            },
+            }
             None => msg.react(ctx, '👎').await?,
         };
     }
