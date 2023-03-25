@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -12,12 +13,14 @@ use crate::story::story_structs::{StoryBlock, StoryContainer};
 
 #[derive(Debug, Clone)]
 pub struct StoryListener {
+    story_name: String,
     current_story_path: Option<Arc<StoryBlock>>,
 }
 
 impl StoryListener {
-    pub fn new(story: &Arc<StoryBlock>) -> StoryListener {
+    pub fn new(story: &Arc<StoryBlock>, story_name: &String) -> StoryListener {
         StoryListener {
+            story_name: story_name.clone(),
             current_story_path: Some(story.clone()),
         }
     }
@@ -31,7 +34,7 @@ impl TypeMapKey for StoryListenerContainer {
 }
 
 impl TypeMapKey for LoadedStoryContainer {
-    type Value = Arc<RwLock<Option<Arc<StoryBlock>>>>;
+    type Value = Arc<RwLock<Option<(Arc<StoryBlock>, String)>>>;
 }
 
 #[command]
@@ -61,10 +64,10 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
             None => {
                 msg.reply(ctx, "No story found").await?;
             }
-            Some(story) => {
+            Some((story, story_name)) => {
                 let mut user_map = user_lock.write().await;
 
-                let new_story = StoryListener::new(&story);
+                let new_story = StoryListener::new(&story, &story_name);
 
                 let content = new_story
                     .clone()
@@ -111,6 +114,7 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 Some(user_prime) => {
                     println!("Inside user_prime block");
                     let mut index = -1;
+                    let current_story = &user_prime.story_name.clone();
                     match &user_prime.current_story_path {
                         None => {
                             msg.reply(ctx, "No active story").await?;
@@ -137,6 +141,8 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                         .get(index as usize)
                                         .expect("Story path should always have an index")
                                         .0,
+                                    
+                                    &current_story
                                 ));
                             }
                         }
@@ -292,7 +298,7 @@ async fn set_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
             }
             Some(story) => {
                 let mut current_story = curr_story_lock.write().await;
-                current_story.replace(story.clone());
+                current_story.replace((story.clone(), story_name.clone()));
 
                 msg.reply(ctx, "Loaded the story").await?;
             }
@@ -313,18 +319,54 @@ async fn clear_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandRes
         return Ok(());
     }
 
-    let story_lock = {
+    let (story_lock, listener_lock, loaded_lock) = {
         let data_read = ctx.data.read().await;
 
-        data_read.get::<StoryContainer>().expect("Expected StoryContainer in TypeMap").clone()
+        (data_read.get::<StoryContainer>().expect("Expected StoryContainer in TypeMap").clone(),
+        data_read.get::<StoryListenerContainer>().expect("Expected Storylistener in TypeMap").clone(),
+        data_read.get::<LoadedStoryContainer>().expect("Expected LoadedStoryContainer in TypeMap").clone())
     };
 
     {
         let mut story_map = story_lock.write().await;
         match story_map.remove(&story_name) {
-            Some(story) => {
-                //TODO: cleanup logic here
+            Some(story) => {                
+                let mut visited = HashSet::new();
+                let mut to_cleanup = Vec::new();
+                StoryBlock::story_to_list_unique(&story, &mut visited, &mut to_cleanup);
                 
+                // Clear story from all users.
+                {
+                    let mut listeners = listener_lock.write().await;
+                    for (_, v) in listeners.iter_mut() {
+                        if v.story_name == story_name {
+                            v.current_story_path = None;
+                        }
+                    }
+                }
+
+                //If story is loaded, unload it.
+                {
+                    let mut loaded = loaded_lock.write().await;
+                    let mut remove = false;
+                    if let Some((_, name)) = &*loaded {
+                        if *name == story_name {
+                            remove = true;
+                        }
+                    }
+
+                    if remove {
+                        *loaded = None;
+                    }
+                }
+
+                for unique in to_cleanup.iter_mut() {
+                    *unique.path.lock().unwrap() = Vec::new();
+                }
+
+                drop(to_cleanup);
+                drop(story);
+
                 msg.react(ctx, '👍').await?
             },
             None => msg.react(ctx, '👎').await?,
