@@ -57,9 +57,9 @@ impl TypeMapKey for StoryContainer {
     type Value = Arc<RwLock<std::collections::HashMap<String, Arc<StoryBlock>>>>;
 }
 
-//TODO: remove this after finishing
-impl Drop for StoryBlock {
-    fn drop(&mut self) {
-        println!("Dropping story with id {}", self.id);
-    }
-}
+// Test implementation for drop to monitor if memory dropped correctly.
+// impl Drop for StoryBlock {
+//     fn drop(&mut self) {
+//         println!("Dropping story with id {}", self.id);
+//     }
+// }
