@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{ HashSet, HashMap };
 use std::path::Path;
 use std::sync::Arc;
 
@@ -18,9 +18,9 @@ pub struct StoryListener {
 }
 
 impl StoryListener {
-    pub fn new(story: &Arc<StoryBlock>, story_name: &String) -> StoryListener {
+    pub fn new(story: &Arc<StoryBlock>, story_name: &str) -> StoryListener {
         StoryListener {
-            story_name: story_name.clone(),
+            story_name: story_name.to_owned(),
             current_story_path: Some(story.clone()),
         }
     }
@@ -30,7 +30,7 @@ pub struct StoryListenerContainer;
 pub struct LoadedStoryContainer;
 
 impl TypeMapKey for StoryListenerContainer {
-    type Value = Arc<RwLock<std::collections::HashMap<UserId, StoryListener>>>;
+    type Value = Arc<RwLock<HashMap<UserId, StoryListener>>>;
 }
 
 impl TypeMapKey for LoadedStoryContainer {
@@ -141,7 +141,7 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                         .get(index as usize)
                                         .expect("Story path should always have an index")
                                         .0,
-                                    &current_story,
+                                    current_story,
                                 ));
                             }
                         }
@@ -191,9 +191,9 @@ async fn load(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let file_name = Path::new(&file_path);
     let file_name = file_name
         .file_stem()
-        .ok_or(String::from("Failed to get file stem"))?
+        .ok_or_else(|| String::from("Failed to get file stem"))?
         .to_str()
-        .ok_or(String::from(""))
+        .ok_or_else(|| String::from(""))
         .map(|x| x.to_string());
 
     match file_name {

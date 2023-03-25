@@ -1,5 +1,5 @@
 use std::{
-    collections::HashSet,
+    collections::{HashSet, HashMap},
     sync::{Arc, Mutex},
 };
 
@@ -13,8 +13,11 @@ pub struct StoryBlock {
     pub id: String,
     pub text: String,
 
-    pub path: Arc<Mutex<Vec<(Arc<StoryBlock>, String, String)>>>,
+    pub path: Arc<Mutex<StoryPaths>>,
 }
+
+pub type StoryPath = (Arc<StoryBlock>, String, String);
+pub type StoryPaths = Vec<StoryPath>;
 
 impl StoryBlock {
     pub fn from_parse(parse: &StoryParse) -> StoryBlock {
@@ -47,7 +50,7 @@ impl StoryBlock {
     ) {
         let s = story.id.clone();
 
-        visited.insert(s.clone());
+        visited.insert(s);
         res.push(story.clone());
 
         for i in story.path.lock().unwrap().iter() {
@@ -61,12 +64,5 @@ impl StoryBlock {
 pub struct StoryContainer;
 
 impl TypeMapKey for StoryContainer {
-    type Value = Arc<RwLock<std::collections::HashMap<String, Arc<StoryBlock>>>>;
+    type Value = Arc<RwLock<HashMap<String, Arc<StoryBlock>>>>;
 }
-
-// Test implementation for drop to monitor if memory dropped correctly.
-// impl Drop for StoryBlock {
-//     fn drop(&mut self) {
-//         println!("Dropping story with id {}", self.id);
-//     }
-// }
