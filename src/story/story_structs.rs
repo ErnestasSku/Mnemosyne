@@ -1,4 +1,7 @@
-use std::{sync::{Arc, Mutex}, collections::HashSet};
+use std::{
+    collections::{HashSet, HashMap},
+    sync::{Arc, Mutex},
+};
 
 use serenity::prelude::TypeMapKey;
 use tokio::sync::RwLock;
@@ -10,8 +13,11 @@ pub struct StoryBlock {
     pub id: String,
     pub text: String,
 
-    pub path: Arc<Mutex<Vec<(Arc<StoryBlock>, String, String)>>>,
+    pub path: Arc<Mutex<StoryPaths>>,
 }
+
+pub type StoryPath = (Arc<StoryBlock>, String, String);
+pub type StoryPaths = Vec<StoryPath>;
 
 impl StoryBlock {
     pub fn from_parse(parse: &StoryParse) -> StoryBlock {
@@ -37,12 +43,16 @@ impl StoryBlock {
         built_story
     }
 
-    pub fn story_to_list_unique(story: &Arc<StoryBlock>, visited: &mut HashSet<String>, res: &mut Vec<Arc<StoryBlock>>) {
+    pub fn story_to_list_unique(
+        story: &Arc<StoryBlock>,
+        visited: &mut HashSet<String>,
+        res: &mut Vec<Arc<StoryBlock>>,
+    ) {
         let s = story.id.clone();
-    
-        visited.insert(s.clone());
+
+        visited.insert(s);
         res.push(story.clone());
-    
+
         for i in story.path.lock().unwrap().iter() {
             if !visited.contains(&i.0.id) {
                 StoryBlock::story_to_list_unique(&i.0, visited, res);
@@ -54,12 +64,5 @@ impl StoryBlock {
 pub struct StoryContainer;
 
 impl TypeMapKey for StoryContainer {
-    type Value = Arc<RwLock<std::collections::HashMap<String, Arc<StoryBlock>>>>;
+    type Value = Arc<RwLock<HashMap<String, Arc<StoryBlock>>>>;
 }
-
-// Test implementation for drop to monitor if memory dropped correctly.
-// impl Drop for StoryBlock {
-//     fn drop(&mut self) {
-//         println!("Dropping story with id {}", self.id);
-//     }
-// }

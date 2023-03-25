@@ -17,7 +17,6 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
-use std::time::Duration;
 use story::story_structs::StoryContainer;
 use tracing::{error, info};
 use update_informer::{registry, Check};
@@ -26,8 +25,6 @@ use crate::commands::general::*;
 use crate::commands::math::*;
 use crate::commands::owner::*;
 use crate::story::story::*;
-
-const UPDATE_CHECK_PERIOD: Duration = Duration::from_secs(60 * 60 * 24);
 
 pub struct ShardManagerContainer;
 
@@ -65,8 +62,8 @@ async fn main() {
         registry::GitHub,
         "https://github.com/ErnestasSku/Mnemosyne",
         "0.1.0",
-    )
-    .timeout(UPDATE_CHECK_PERIOD);
+    );
+
     if let Some(version) = informer.check_version().ok().flatten() {
         println!("New version is available: {}. Go to https://github.com/ErnestasSku/Mnemosyne to update", version);
     }
