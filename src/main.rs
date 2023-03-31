@@ -58,18 +58,12 @@ struct Story;
 
 #[tokio::main]
 async fn main() {
-    let informer = update_informer::new(
-        registry::GitHub,
-        "https://github.com/ErnestasSku/Mnemosyne",
-        "0.1.0",
-    );
+    run_informer().await;
+    run_bot().await;
+}
 
-    if let Some(version) = informer.check_version().ok().flatten() {
-        println!("New version is available: {}. Go to https://github.com/ErnestasSku/Mnemosyne to update", version);
-    }
-
+async fn run_bot() {
     dotenv::dotenv().expect("Failed to load .env file");
-
     let token = env::var("TOKEN").expect("Expected a token in the environment");
     let http = Http::new(&token);
 
@@ -78,7 +72,6 @@ async fn main() {
             let mut owners = HashSet::new();
             owners.insert(info.owner.id);
 
-            println!("{:?}", owners);
             (owners, info.id)
         }
         Err(why) => panic!("Could not access application info: {:?}", why),
@@ -97,14 +90,7 @@ async fn main() {
         .await
         .expect("Err creating client");
 
-    //Data inserts
-    {
-        let mut data = client.data.write().await;
-        data.insert::<ShardManagerContainer>(client.shard_manager.clone());
-        data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
-        data.insert::<StoryListenerContainer>(Arc::new(RwLock::new(HashMap::default())));
-        data.insert::<LoadedStoryContainer>(Arc::new(RwLock::new(None)));
-    }
+    setup_data(&client).await;
 
     let shard_manager = client.shard_manager.clone();
 
@@ -115,9 +101,30 @@ async fn main() {
         shard_manager.lock().await.shutdown_all().await;
     });
 
+    info!("Bot is starting...");
     if let Err(why) = client.start().await {
         error!("Client error: {:?}", why);
     }
+}
+
+async fn run_informer() {
+    let informer = update_informer::new(
+        registry::GitHub,
+        "https://github.com/ErnestasSku/Mnemosyne",
+        "0.1.0",
+    );
+
+    if let Some(version) = informer.check_version().ok().flatten() {
+        println!("New version is available: {}. Go to https://github.com/ErnestasSku/Mnemosyne to update", version);
+    }
+}
+
+async fn setup_data(client: &Client) {
+    let mut data = client.data.write().await;
+    data.insert::<ShardManagerContainer>(client.shard_manager.clone());
+    data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
+    data.insert::<StoryListenerContainer>(Arc::new(RwLock::new(HashMap::default())));
+    data.insert::<LoadedStoryContainer>(Arc::new(RwLock::new(None)));
 }
 
 #[help]
