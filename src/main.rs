@@ -17,7 +17,7 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
-use story::story_structs::StoryContainer;
+use story::story_structs::{StoryContainer, StoryBlock};
 use tracing::{error, info};
 use update_informer::{registry, Check};
 
@@ -27,10 +27,6 @@ use crate::commands::owner::*;
 use crate::story::story::*;
 
 pub struct ShardManagerContainer;
-
-impl TypeMapKey for ShardManagerContainer {
-    type Value = Arc<Mutex<ShardManager>>;
-}
 
 struct Handler;
 
@@ -117,6 +113,22 @@ async fn run_informer() {
     if let Some(version) = informer.check_version().ok().flatten() {
         println!("New version is available: {}. Go to https://github.com/ErnestasSku/Mnemosyne to update", version);
     }
+}
+
+impl TypeMapKey for ShardManagerContainer {
+    type Value = Arc<Mutex<ShardManager>>;
+}
+
+impl TypeMapKey for StoryListenerContainer {
+    type Value = Arc<RwLock<HashMap<UserId, StoryListener>>>;
+}
+
+impl TypeMapKey for LoadedStoryContainer {
+    type Value = Arc<RwLock<Option<(Arc<StoryBlock>, String)>>>;
+}
+
+impl TypeMapKey for StoryContainer {
+    type Value = Arc<RwLock<HashMap<String, Arc<StoryBlock>>>>;
 }
 
 async fn setup_data(client: &Client) {

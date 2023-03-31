@@ -1,4 +1,4 @@
-use std::collections::{ HashSet, HashMap };
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -6,7 +6,6 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use tokio::sync::RwLock;
 
 use crate::story::story_builder::map_stories_p;
 use crate::story::story_structs::{StoryBlock, StoryContainer};
@@ -28,14 +27,6 @@ impl StoryListener {
 
 pub struct StoryListenerContainer;
 pub struct LoadedStoryContainer;
-
-impl TypeMapKey for StoryListenerContainer {
-    type Value = Arc<RwLock<HashMap<UserId, StoryListener>>>;
-}
-
-impl TypeMapKey for LoadedStoryContainer {
-    type Value = Arc<RwLock<Option<(Arc<StoryBlock>, String)>>>;
-}
 
 #[command]
 #[aliases("start", "begin")]
