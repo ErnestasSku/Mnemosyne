@@ -7,7 +7,6 @@ use std::env;
 use std::sync::Arc;
 
 use serenity::async_trait;
-use serenity::client::bridge::gateway::ShardManager;
 use serenity::framework::standard::macros::{group, help};
 use serenity::framework::standard::{
     help_commands, Args, CommandGroup, CommandResult, HelpOptions,
@@ -18,7 +17,7 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
-use story::story_structs::{StoryBlock, StoryContainer};
+use story::story_structs::StoryContainer;
 use tracing::{error, info};
 use update_informer::{registry, Check};
 

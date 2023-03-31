@@ -43,7 +43,7 @@ impl<'a> DataAccessBuilder<'a> {
         self
     }
 
-    pub fn get_loaded_story(mut self) -> Self {
+    pub fn get_loaded_lock(mut self) -> Self {
         self.loaded_story_lock = Some(
             self.data_read
                 .get::<LoadedStoryContainer>()
@@ -53,7 +53,7 @@ impl<'a> DataAccessBuilder<'a> {
         self
     }
 
-    pub fn get_story_container(mut self) -> Self {
+    pub fn get_story_lock(mut self) -> Self {
         self.story_lock = Some(
             self.data_read
                 .get::<StoryContainer>()
@@ -63,7 +63,7 @@ impl<'a> DataAccessBuilder<'a> {
         self
     }
 
-    pub fn build(mut self) -> DataAccess {
+    pub fn build(self) -> DataAccess {
         DataAccess {
             user_lock: self.user_lock,
             story_lock: self.story_lock,
