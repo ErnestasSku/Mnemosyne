@@ -1,4 +1,4 @@
-use std::collections::{ HashSet, HashMap };
+use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -6,10 +6,11 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use tokio::sync::RwLock;
+use tracing::error;
 
 use crate::story::story_builder::map_stories_p;
 use crate::story::story_structs::{StoryBlock, StoryContainer};
+use crate::utilities::type_map_builder::DataAccessBuilder;
 
 #[derive(Debug, Clone)]
 pub struct StoryListener {
@@ -29,35 +30,38 @@ impl StoryListener {
 pub struct StoryListenerContainer;
 pub struct LoadedStoryContainer;
 
-impl TypeMapKey for StoryListenerContainer {
-    type Value = Arc<RwLock<HashMap<UserId, StoryListener>>>;
-}
-
-impl TypeMapKey for LoadedStoryContainer {
-    type Value = Arc<RwLock<Option<(Arc<StoryBlock>, String)>>>;
-}
-
 #[command]
 #[aliases("start", "begin")]
 #[description = "Lets you start a story which was selected"]
 async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
-    let (user_lock, story_lock) = {
+    let access = {
         let data_read = ctx.data.read().await;
 
-        (
-            data_read
-                .get::<StoryListenerContainer>()
-                .expect("Expected StoryListenerContainer in TypeMap")
-                .clone(),
-            data_read
-                .get::<LoadedStoryContainer>()
-                .expect("Expected LoadedStoryContainer in TypeMap")
-                .clone(),
-        )
+        DataAccessBuilder::new(&data_read)
+            .get_user_lock()
+            .get_loaded_lock()
+            .build()
     };
 
+    if access.user_lock.is_none() {
+        //TODO some handling
+        error!("Could not get user lock");
+        return Ok(());
+    }
+
+    if access.loaded_story_lock.is_none() {
+        //TODO some handling
+        error!("Could not get loaded lock");
+        return Ok(());
+    }
+
+    let (user_lock, loaded_lock) = (
+        access.user_lock.expect("Impossible to fail"),
+        access.loaded_story_lock.expect("Impossible to fail"),
+    );
+
     {
-        let story = story_lock.read().await;
+        let story = loaded_lock.read().await;
         let story_block = story.as_ref().cloned();
 
         match story_block {

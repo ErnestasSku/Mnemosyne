@@ -1,10 +1,7 @@
 use std::{
-    collections::{HashSet, HashMap},
+    collections::HashSet,
     sync::{Arc, Mutex},
 };
-
-use serenity::prelude::TypeMapKey;
-use tokio::sync::RwLock;
 
 use super::story_parser::StoryParse;
 
@@ -62,7 +59,3 @@ impl StoryBlock {
 }
 
 pub struct StoryContainer;
-
-impl TypeMapKey for StoryContainer {
-    type Value = Arc<RwLock<HashMap<String, Arc<StoryBlock>>>>;
-}
