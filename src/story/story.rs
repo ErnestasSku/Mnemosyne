@@ -44,13 +44,11 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     if access.user_lock.is_none() {
-        //TODO some handling
         error!("Could not get user lock");
         return Ok(());
     }
 
     if access.loaded_story_lock.is_none() {
-        //TODO some handling
         error!("Could not get loaded lock");
         return Ok(());
     }
@@ -60,17 +58,14 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
         access.loaded_story_lock.expect("Impossible to fail"),
     );
 
-    {
+    let response = {
         let story = loaded_lock.read().await;
         let story_block = story.as_ref().cloned();
 
         match story_block {
-            None => {
-                msg.reply(ctx, "No story found").await?;
-            }
+            None => String::from("No story found"),
             Some((story, story_name)) => {
                 let mut user_map = user_lock.write().await;
-
                 let new_story = StoryListener::new(&story, &story_name);
 
                 let content = new_story
@@ -78,12 +73,14 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
                     .current_story_path
                     .map(|x| x.present())
                     .expect("This should always have a value.");
-                msg.reply(ctx, content).await?;
 
                 user_map.insert(msg.author.id, new_story);
+                content
             }
         }
-    }
+    };
+
+    msg.reply(ctx, response).await?;
 
     Ok(())
 }
