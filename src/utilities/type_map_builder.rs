@@ -34,32 +34,23 @@ impl<'a> DataAccessBuilder<'a> {
     }
 
     pub fn get_user_lock(mut self) -> Self {
-        self.user_lock = Some(
-            self.data_read
-                .get::<StoryListenerContainer>()
-                .expect("Expected StoryListener in TypeMap")
-                .clone(),
-        );
+        self.user_lock = self
+            .data_read
+            .get::<StoryListenerContainer>()
+            .map(Clone::clone);
         self
     }
 
     pub fn get_loaded_lock(mut self) -> Self {
-        self.loaded_story_lock = Some(
-            self.data_read
-                .get::<LoadedStoryContainer>()
-                .expect("Expected o in TypeMap")
-                .clone(),
-        );
+        self.loaded_story_lock = self
+            .data_read
+            .get::<LoadedStoryContainer>()
+            .map(Clone::clone);
         self
     }
 
     pub fn get_story_lock(mut self) -> Self {
-        self.story_lock = Some(
-            self.data_read
-                .get::<StoryContainer>()
-                .expect("Expected StoryContainer in TypeMap")
-                .clone(),
-        );
+        self.story_lock = self.data_read.get::<StoryContainer>().map(Clone::clone);
         self
     }
 
