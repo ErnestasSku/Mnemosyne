@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -103,72 +103,75 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     }
     let user_lock = data_access.user_lock.expect("Impossible to fail");
 
-    let response = {
-        let mut user_map = user_lock.write().await;
-        let user = user_map.get(&msg.author.id);
-
-        let (new_user_value, error_message) = match user {
-            None => (None, String::from("User hasn't started the story yet")),
-            Some(user_prime) => {
-                let mut index = -1;
-                let current_story = &user_prime.story_name.clone();
-                match &user_prime.current_story_path {
-                    None => {
-                        msg.reply(ctx, "No active story").await?;
-                        (None, String::from("No active story"))
-                    }
-                    Some(val) => {
-                        for (i, data) in val.path.lock().unwrap().iter().enumerate() {
-                            if data.1 == command_name {
-                                index = i as i32;
-                            }
-                        }
-
-                        if index == -1 {
-                            (None, String::default())
-                        } else {
-                            (
-                                Some(StoryListener::new(
-                                    &val.path
-                                        .lock()
-                                        .unwrap()
-                                        .get(index as usize)
-                                        .expect("Story path should always have an index")
-                                        .0,
-                                    current_story,
-                                )),
-                                String::default(),
-                            )
-                        }
-                    }
-                }
-            }
-        };
-
-        if new_user_value.is_some() {
-            let temp = new_user_value.clone();
-            user_map.insert(
-                msg.author.id,
-                new_user_value.expect("is_some used, should never fail unwrapping"),
-            );
-            if let Some(st) = temp {
-                if let Some(message) = &st.current_story_path {
-                    message.present()
-                } else {
-                    String::from("")
-                }
-            } else {
-                String::from("It was None")
-            }
-        } else {
-            error_message
-        }
-    };
+    let response = get_action_response(&user_lock, &msg.author.id, &command_name).await;
 
     if !response.is_empty() {
         msg.reply(ctx, response).await?;
     }
     Ok(())
+}
+
+async fn get_action_response(
+    user_lock: &Arc<RwLock<HashMap<UserId, StoryListener>>>,
+    author_id: &UserId,
+    command_name: &str,
+) -> String {
+    let mut user_map = user_lock.write().await;
+    let user = user_map.get(author_id);
+
+    let (new_user_value, error_message) = match user {
+        None => (None, String::from("User hasn't started the story yet")),
+        Some(user_prime) => {
+            let mut index = -1;
+            let current_story = &user_prime.story_name.clone();
+            match &user_prime.current_story_path {
+                None => (None, String::from("No active story")),
+                Some(val) => {
+                    for (i, data) in val.path.lock().unwrap().iter().enumerate() {
+                        if data.1 == command_name {
+                            index = i as i32;
+                        }
+                    }
+
+                    if index == -1 {
+                        (None, String::default())
+                    } else {
+                        (
+                            Some(StoryListener::new(
+                                &val.path
+                                    .lock()
+                                    .unwrap()
+                                    .get(index as usize)
+                                    .expect("Story path should always have an index")
+                                    .0,
+                                current_story,
+                            )),
+                            String::default(),
+                        )
+                    }
+                }
+            }
+        }
+    };
+
+    if new_user_value.is_some() {
+        let temp = new_user_value.clone();
+        user_map.insert(
+            *author_id,
+            new_user_value.expect("is_some used, should never fail unwrapping"),
+        );
+        if let Some(st) = temp {
+            if let Some(message) = &st.current_story_path {
+                message.present()
+            } else {
+                String::from("")
+            }
+        } else {
+            String::from("It was None")
+        }
+    } else {
+        error_message
+    }
 }
 
 #[command]
