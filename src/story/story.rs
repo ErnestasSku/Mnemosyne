@@ -6,10 +6,10 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use tracing::error;
 
 use crate::story::story_builder::map_stories_p;
 use crate::story::story_structs::{StoryBlock, StoryContainer};
+use crate::utilities::error_reporting::bot_inform_command_error;
 use crate::utilities::type_map_builder::DataAccessBuilder;
 
 #[derive(Debug, Clone)]
@@ -44,13 +44,11 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     if access.user_lock.is_none() {
-        error!("Could not get user lock");
-        return Ok(());
+        bot_inform_command_error(ctx, msg, "Could not get user lock").await?
     }
 
     if access.loaded_story_lock.is_none() {
-        error!("Could not get loaded lock");
-        return Ok(());
+        bot_inform_command_error(ctx, msg, "Could not get loaded lock").await?
     }
 
     let (user_lock, loaded_lock) = (
