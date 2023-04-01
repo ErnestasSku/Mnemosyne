@@ -89,51 +89,46 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
 async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let command_name = args.single::<String>()?;
 
-    println!("Action - {:?}", &command_name);
-
     if command_name.is_empty() {
         msg.reply(ctx, "invalid command").await?;
-    } else {
-        let user_lock = {
-            let data_read = ctx.data.read().await;
-            data_read
-                .get::<StoryListenerContainer>()
-                .expect("Expected StoryListenerContainer in TypeMap")
-                .clone()
-        };
+        return Ok(());
+    }
+    let data_access = {
+        let data_read = ctx.data.read().await;
+        DataAccessBuilder::new(&data_read).get_user_lock().build()
+    };
 
-        {
-            let mut user_map = user_lock.write().await;
-            let user = user_map.get(&msg.author.id);
-            let mut new_user_value = None;
-            match user {
-                None => {
-                    msg.reply(ctx, "User hasn't started the story yet").await?;
-                }
-                Some(user_prime) => {
-                    println!("Inside user_prime block");
-                    let mut index = -1;
-                    let current_story = &user_prime.story_name.clone();
-                    match &user_prime.current_story_path {
-                        None => {
-                            msg.reply(ctx, "No active story").await?;
-                        }
-                        Some(val) => {
-                            //Another unwrap related to locks.
-                            for (i, data) in val.path.lock().unwrap().iter().enumerate() {
-                                if data.1 == command_name {
-                                    index = i as i32;
-                                }
+    if data_access.user_lock.is_none() {
+        bot_inform_command_error(ctx, msg, "Could not get user lock").await?;
+    }
+    let user_lock = data_access.user_lock.expect("Impossible to fail");
 
-                                println!("\n\n{:?}\n\n", data);
+    let response = {
+        let mut user_map = user_lock.write().await;
+        let user = user_map.get(&msg.author.id);
+
+        let (new_user_value, error_message) = match user {
+            None => (None, String::from("User hasn't started the story yet")),
+            Some(user_prime) => {
+                let mut index = -1;
+                let current_story = &user_prime.story_name.clone();
+                match &user_prime.current_story_path {
+                    None => {
+                        msg.reply(ctx, "No active story").await?;
+                        (None, String::from("No active story"))
+                    }
+                    Some(val) => {
+                        for (i, data) in val.path.lock().unwrap().iter().enumerate() {
+                            if data.1 == command_name {
+                                index = i as i32;
                             }
+                        }
 
-                            println!("Index - {index}");
-                            if index == -1 {
-                                new_user_value = None;
-                            } else {
-                                new_user_value = Some(StoryListener::new(
-                                    //Another unwrap related to locks
+                        if index == -1 {
+                            (None, String::default())
+                        } else {
+                            (
+                                Some(StoryListener::new(
                                     &val.path
                                         .lock()
                                         .unwrap()
@@ -141,31 +136,38 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                         .expect("Story path should always have an index")
                                         .0,
                                     current_story,
-                                ));
-                            }
+                                )),
+                                String::default(),
+                            )
                         }
                     }
                 }
             }
+        };
 
-            if new_user_value.is_some() {
-                let temp = new_user_value.clone();
-                user_map.insert(
-                    msg.author.id,
-                    new_user_value.expect("is_some used, should never fail unwrapping"),
-                );
-                println!("{:?}", &temp);
-                if let Some(st) = temp {
-                    if let Some(message) = &st.current_story_path {
-                        msg.reply(ctx, message.present()).await?;
-                    }
+        if new_user_value.is_some() {
+            let temp = new_user_value.clone();
+            user_map.insert(
+                msg.author.id,
+                new_user_value.expect("is_some used, should never fail unwrapping"),
+            );
+            if let Some(st) = temp {
+                if let Some(message) = &st.current_story_path {
+                    message.present()
                 } else {
-                    println!("It was None");
+                    String::from("")
                 }
+            } else {
+                String::from("It was None")
             }
+        } else {
+            error_message
         }
-    }
+    };
 
+    if !response.is_empty() {
+        msg.reply(ctx, response).await?;
+    }
     Ok(())
 }
 
@@ -173,10 +175,8 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[allowed_roles("Muse", "muse")]
 #[description = "Loads a story file from computer into memory. Usage: ~story load C:\\User\\...\\story_name.story"]
 async fn load(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    println!("{:?}", args);
     let file_path = args.single::<String>()?;
 
-    println!("{:?}", &file_path);
     if file_path.is_empty() {
         msg.reply(
             ctx,
