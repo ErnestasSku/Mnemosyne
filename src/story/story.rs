@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -89,94 +89,97 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
 async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let command_name = args.single::<String>()?;
 
-    println!("Action - {:?}", &command_name);
-
     if command_name.is_empty() {
         msg.reply(ctx, "invalid command").await?;
-    } else {
-        let user_lock = {
-            let data_read = ctx.data.read().await;
-            data_read
-                .get::<StoryListenerContainer>()
-                .expect("Expected StoryListenerContainer in TypeMap")
-                .clone()
-        };
+        return Ok(());
+    }
+    let data_access = {
+        let data_read = ctx.data.read().await;
+        DataAccessBuilder::new(&data_read).get_user_lock().build()
+    };
 
-        {
-            let mut user_map = user_lock.write().await;
-            let user = user_map.get(&msg.author.id);
-            let mut new_user_value = None;
-            match user {
-                None => {
-                    msg.reply(ctx, "User hasn't started the story yet").await?;
-                }
-                Some(user_prime) => {
-                    println!("Inside user_prime block");
-                    let mut index = -1;
-                    let current_story = &user_prime.story_name.clone();
-                    match &user_prime.current_story_path {
-                        None => {
-                            msg.reply(ctx, "No active story").await?;
-                        }
-                        Some(val) => {
-                            //Another unwrap related to locks.
-                            for (i, data) in val.path.lock().unwrap().iter().enumerate() {
-                                if data.1 == command_name {
-                                    index = i as i32;
-                                }
+    if data_access.user_lock.is_none() {
+        bot_inform_command_error(ctx, msg, "Could not get user lock").await?;
+    }
+    let user_lock = data_access.user_lock.expect("Impossible to fail");
 
-                                println!("\n\n{:?}\n\n", data);
-                            }
+    let response = get_action_response(&user_lock, &msg.author.id, &command_name).await;
 
-                            println!("Index - {index}");
-                            if index == -1 {
-                                new_user_value = None;
-                            } else {
-                                new_user_value = Some(StoryListener::new(
-                                    //Another unwrap related to locks
-                                    &val.path
-                                        .lock()
-                                        .unwrap()
-                                        .get(index as usize)
-                                        .expect("Story path should always have an index")
-                                        .0,
-                                    current_story,
-                                ));
-                            }
+    match response {
+        Ok(m) => msg.reply(ctx, m).await?,
+        Err(m) => msg.reply(ctx, m).await?,
+    };
+
+    // if !response.is_empty() {
+    //     msg.reply(ctx, response).await?;
+    // }
+    Ok(())
+}
+
+async fn get_action_response(
+    user_lock: &Arc<RwLock<HashMap<UserId, StoryListener>>>,
+    author_id: &UserId,
+    command_name: &str,
+) -> std::result::Result<String, String> {
+    let mut user_map = user_lock.write().await;
+    let user = user_map.get(author_id);
+
+    let new_user_value = match user {
+        None => Err(String::from("User hasn't started the story yet"))?,
+        Some(user_prime) => {
+            let mut index = -1;
+            let current_story = &user_prime.story_name.clone();
+            match &user_prime.current_story_path {
+                None => Err(String::from("Story doesn't have paths"))?,
+                Some(val) => {
+                    for (i, data) in val.path.lock().unwrap().iter().enumerate() {
+                        if data.1 == command_name {
+                            index = i as i32;
                         }
                     }
-                }
-            }
 
-            if new_user_value.is_some() {
-                let temp = new_user_value.clone();
-                user_map.insert(
-                    msg.author.id,
-                    new_user_value.expect("is_some used, should never fail unwrapping"),
-                );
-                println!("{:?}", &temp);
-                if let Some(st) = temp {
-                    if let Some(message) = &st.current_story_path {
-                        msg.reply(ctx, message.present()).await?;
+                    if index == -1 {
+                        Err(String::default())?
+                    } else {
+                        Some(StoryListener::new(
+                            &val.path
+                                .lock()
+                                .unwrap()
+                                .get(index as usize)
+                                .expect("Story path should always have an index")
+                                .0,
+                            current_story,
+                        ))
                     }
-                } else {
-                    println!("It was None");
                 }
             }
         }
-    }
+    };
 
-    Ok(())
+    let temp = new_user_value.clone();
+    user_map.insert(
+        *author_id,
+        new_user_value.expect("is_some used, should never fail unwrapping"),
+    );
+
+    match temp {
+        Some(st) => {
+            if let Some(message) = &st.current_story_path {
+                Ok(message.present())
+            } else {
+                Ok(String::from(""))
+            }
+        }
+        None => Err(String::from("New user value was none")),
+    }
 }
 
 #[command]
 #[allowed_roles("Muse", "muse")]
 #[description = "Loads a story file from computer into memory. Usage: ~story load C:\\User\\...\\story_name.story"]
 async fn load(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    println!("{:?}", args);
     let file_path = args.single::<String>()?;
 
-    println!("{:?}", &file_path);
     if file_path.is_empty() {
         msg.reply(
             ctx,
