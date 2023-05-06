@@ -1,3 +1,4 @@
+use serenity::builder::CreateMessage;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::CommandResult;
 use serenity::model::prelude::*;
@@ -19,6 +20,23 @@ pub async fn info(ctx: &Context, msg: &Message) -> CommandResult {
     To learn more about the bot or story files check out the repository at https://github.com/ErnestasSku/Mnemosyne";
 
     msg.channel_id.say(&ctx.http, help_message).await?;
+
+    Ok(())
+}
+
+#[command]
+pub async fn test(ctx: &Context, msg: &Message) -> CommandResult {
+    let _ = msg
+        .channel_id
+        .send_message(&ctx, |a| {
+            a.embed(|e| {
+                e.title("Loaded stories").fields(vec![
+                    ("Test", "Test \n asd \nasd", true),
+                    ("Test", "T", false),
+                ])
+            })
+        })
+        .await;
 
     Ok(())
 }

@@ -6,6 +6,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
+use tracing::{debug, error};
 
 use crate::story::story_builder::map_stories_p;
 use crate::story::story_structs::{StoryBlock, StoryContainer};
@@ -224,13 +225,14 @@ async fn load(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         }
         Err(err) => {
             msg.reply(ctx, "Error happened").await?;
-            println!("{}", err);
+            error!("{}", err);
         }
     }
     Ok(())
 }
 
 #[command]
+#[aliases("loaded")]
 #[allowed_roles("Muse", "muse")]
 #[description = "Prints a list of loaded stories."]
 async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
@@ -241,21 +243,26 @@ async fn read_loaded(ctx: &Context, msg: &Message) -> CommandResult {
             .expect("Expected StoryContainer in TypeMap")
             .clone()
     };
-    {
+
+    let message = {
         let stories = story_lock.read().await.clone();
 
-        println!("{:?}", &stories);
         let message = stories
             .into_keys()
             .collect::<Vec<String>>()
             .iter()
             .enumerate()
-            .map(|(i, x)| i.to_string() + ". " + x + "\n")
+            .map(|(i, x)| (i + 1).to_string() + ". " + x + "\n")
             .collect::<Vec<String>>()
             .concat();
+        message
+    };
 
-        msg.reply(ctx, message).await?;
-    }
+    msg.channel_id
+        .send_message(ctx, |cm| {
+            cm.embed(|e| e.title("Loaded stories").field("", message, false))
+        })
+        .await?;
 
     Ok(())
 }

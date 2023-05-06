@@ -45,7 +45,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(info, action, multiply, quit)]
+#[commands(info, action, multiply, quit, test)]
 struct General;
 
 #[group]
