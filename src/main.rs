@@ -19,6 +19,7 @@ use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
 use std::fs;
+use story::story_builder::map_stories_p;
 use story::story_structs::StoryContainer;
 use tracing::{error, info};
 use update_informer::{registry, Check};
@@ -56,13 +57,13 @@ struct Story;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt().init();
     run_informer().await;
-    #[allow(unused_variables)]
-    let story_files = check_directory().await;
-    run_bot().await;
+    let startup_story_files = check_directory().await;
+    run_bot(startup_story_files).await;
 }
 
-async fn run_bot() {
+async fn run_bot(startup_story_files: Option<Vec<String>>) {
     dotenv::dotenv().expect("Failed to load .env file");
     let token = env::var("TOKEN").expect("Expected a token in the environment");
     let http = Http::new(&token);
@@ -90,7 +91,7 @@ async fn run_bot() {
         .await
         .expect("Err creating client");
 
-    setup_data(&client).await;
+    setup_data(&client, startup_story_files).await;
 
     let shard_manager = client.shard_manager.clone();
 
@@ -169,12 +170,39 @@ async fn run_informer() {
     }
 }
 
-async fn setup_data(client: &Client) {
+async fn setup_data(client: &Client, startup_story_files: Option<Vec<String>>) {
     let mut data = client.data.write().await;
     data.insert::<ShardManagerContainer>(client.shard_manager.clone());
-    data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
     data.insert::<StoryListenerContainer>(Arc::new(RwLock::new(HashMap::default())));
     data.insert::<LoadedStoryContainer>(Arc::new(RwLock::new(None)));
+
+    info!("Setup info");
+    if let Some(files) = startup_story_files {
+        let stories = parse_stories(&files);
+        info!("Inserting {} stories", &stories.len());
+        data.insert::<StoryContainer>(Arc::new(RwLock::new(stories)));
+    } else {
+        data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
+    }
+}
+
+fn parse_stories(files: &[String]) -> HashMap<String, Arc<story::story_structs::StoryBlock>> {
+    let mut counter = 0;
+    files
+        .iter()
+        .filter_map(|f| {
+            let file_path = Path::new(f).to_owned();
+            let name = file_path.file_stem()?;
+            let story = map_stories_p(f).ok()?;
+            let name_str = name.to_str().map(String::from).unwrap_or_else(|| {
+                format!("default-{}", {
+                    counter += 1;
+                    counter - 1
+                })
+            });
+            Some((name_str, story))
+        })
+        .collect()
 }
 
 #[help]
