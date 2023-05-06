@@ -4,6 +4,7 @@ mod utilities;
 
 use std::collections::{HashMap, HashSet};
 use std::env;
+use std::path::Path;
 use std::sync::Arc;
 
 use serenity::async_trait;
@@ -17,6 +18,7 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
+use std::fs;
 use story::story_structs::StoryContainer;
 use tracing::{error, info};
 use update_informer::{registry, Check};
@@ -55,6 +57,8 @@ struct Story;
 #[tokio::main]
 async fn main() {
     run_informer().await;
+    #[allow(unused_variables)]
+    let story_files = check_directory().await;
     run_bot().await;
 }
 
@@ -101,6 +105,56 @@ async fn run_bot() {
     if let Err(why) = client.start().await {
         error!("Client error: {:?}", why);
     }
+}
+
+async fn check_directory() -> Option<Vec<String>> {
+    let current_directory = env::current_dir().ok()?;
+
+    let mut stories_directory = current_directory.clone();
+    stories_directory.push("stories");
+
+    let f1: Option<Vec<String>> = scan_directory(&current_directory);
+    let f2: Option<Vec<String>> = scan_directory(&stories_directory);
+
+    let files = combine_file_paths(f1, f2);
+    files
+}
+
+fn combine_file_paths(f1: Option<Vec<String>>, f2: Option<Vec<String>>) -> Option<Vec<String>> {
+    if f1.is_none() && f2.is_some() {
+        f2
+    } else if f2.is_none() && f1.is_some() {
+        f1
+    } else {
+        f1.and_then(|r1| {
+            f2.map(|r2| {
+                r1.into_iter()
+                    .chain(r2.into_iter())
+                    .collect::<Vec<String>>()
+            })
+        })
+    }
+}
+
+fn scan_directory(path: &dyn AsRef<Path>) -> Option<Vec<String>> {
+    let mut files = Vec::new();
+    let directory = fs::read_dir(path).ok()?;
+
+    for dir_entry in directory {
+        if let Ok(file) = dir_entry {
+            let file_path = file.path();
+
+            if let Some(ext) = file_path.extension() {
+                if ext.eq_ignore_ascii_case("story") {
+                    if let Some(file_path_str) = file_path.to_str() {
+                        files.push(file_path_str.to_owned());
+                    }
+                }
+            }
+        }
+    }
+
+    Some(files)
 }
 
 async fn run_informer() {

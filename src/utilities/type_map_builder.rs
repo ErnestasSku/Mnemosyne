@@ -49,6 +49,7 @@ impl<'a> DataAccessBuilder<'a> {
         self
     }
 
+    #[allow(dead_code)]
     pub fn get_story_lock(mut self) -> Self {
         self.story_lock = self.data_read.get::<StoryContainer>().map(Clone::clone);
         self
