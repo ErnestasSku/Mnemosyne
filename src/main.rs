@@ -117,8 +117,7 @@ async fn check_directory() -> Option<Vec<String>> {
     let f1: Option<Vec<String>> = scan_directory(&current_directory);
     let f2: Option<Vec<String>> = scan_directory(&stories_directory);
 
-    let files = combine_file_paths(f1, f2);
-    files
+    combine_file_paths(f1, f2)
 }
 
 fn combine_file_paths(f1: Option<Vec<String>>, f2: Option<Vec<String>>) -> Option<Vec<String>> {
@@ -141,15 +140,13 @@ fn scan_directory(path: &dyn AsRef<Path>) -> Option<Vec<String>> {
     let mut files = Vec::new();
     let directory = fs::read_dir(path).ok()?;
 
-    for dir_entry in directory {
-        if let Ok(file) = dir_entry {
-            let file_path = file.path();
+    for dir_entry in directory.flatten() {
+        let file_path = dir_entry.path();
 
-            if let Some(ext) = file_path.extension() {
-                if ext.eq_ignore_ascii_case("story") {
-                    if let Some(file_path_str) = file_path.to_str() {
-                        files.push(file_path_str.to_owned());
-                    }
+        if let Some(ext) = file_path.extension() {
+            if ext.eq_ignore_ascii_case("story") {
+                if let Some(file_path_str) = file_path.to_str() {
+                    files.push(file_path_str.to_owned());
                 }
             }
         }
