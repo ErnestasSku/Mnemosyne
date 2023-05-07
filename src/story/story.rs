@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
+use serenity::model::prelude::interaction::InteractionResponseType;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use tracing::{debug, error, info};
@@ -320,7 +321,7 @@ async fn set_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
 #[command]
 #[aliases("set")]
 #[allowed_roles("Muse", "muse")]
-async fn set_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+async fn set_story_new(ctx: &Context, msg: &Message) -> CommandResult {
     let data_access = {
         let data_read = ctx.data.read().await;
 
@@ -336,13 +337,7 @@ async fn set_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
     let available_stories = {
         let stories = story_lock.read().await.clone();
 
-        stories
-            .into_keys()
-            .collect::<Vec<String>>()
-            .iter()
-            .enumerate()
-            .map(|(index, name)| (index + 1).to_string() + ". " + name)
-            .collect::<Vec<String>>()
+        stories.into_keys().collect::<Vec<String>>()
     };
 
     let message = msg
@@ -355,11 +350,13 @@ async fn set_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                         menu.placeholder("Select story");
 
                         menu.options(|f| {
-                            let _a = available_stories
+                            let _ = available_stories
                                 .iter()
-                                .map(|story| {
+                                .enumerate()
+                                .map(|(index, story)| {
                                     f.create_option(|o| {
-                                        o.label(story.clone()).value(story.clone())
+                                        o.label(format!("{}. {}", index + 1, story))
+                                            .value(story.clone())
                                     });
                                 })
                                 .collect::<Vec<_>>();
@@ -392,7 +389,7 @@ async fn set_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
         story.map(|s| s.clone())
     };
 
-    let mut bot_response_builder = MnemosyneResponseBuilder::new(&ctx, &msg);
+    let mut bot_response_builder = MnemosyneResponseBuilder::new(&ctx, &message);
 
     match story {
         Some(story) => {
@@ -409,6 +406,13 @@ async fn set_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                 .set_content("Failed to retrieve this story from loaded story map");
         }
     }
+
+    interaction
+        .create_interaction_response(ctx, |r| {
+            r.kind(InteractionResponseType::UpdateMessage)
+                .interaction_response_data(|d| d.content("Selecting").components(|c| c))
+        })
+        .await?;
 
     let bot_response = bot_response_builder.build();
     bot_response.respond().await
