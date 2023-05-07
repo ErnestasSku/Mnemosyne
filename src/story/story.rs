@@ -6,7 +6,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 use crate::story::story_builder::map_stories_p;
 use crate::story::story_structs::{StoryBlock, StoryContainer};
@@ -312,6 +312,84 @@ async fn set_story(ctx: &Context, msg: &Message, mut args: Args) -> CommandResul
             }
         }
     }
+
+    Ok(())
+}
+
+#[command]
+#[aliases("set")]
+#[allowed_roles("Muse", "muse")]
+async fn set_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let data_access = {
+        let data_read = ctx.data.read().await;
+
+        DataAccessBuilder::new(&data_read)
+            .get_story_lock()
+            .get_loaded_lock()
+            .build()
+    };
+
+    let story_lock = data_access.story_lock.expect("Should not fail");
+    let loaded_lock = data_access.loaded_story_lock.expect("Should not fail");
+
+    let available_stories = {
+        let stories = story_lock.read().await.clone();
+
+        stories
+            .into_keys()
+            .collect::<Vec<String>>()
+            .iter()
+            .enumerate()
+            .map(|(index, name)| (index + 1).to_string() + ". " + name)
+            .collect::<Vec<String>>()
+    };
+
+    let message = msg
+        .channel_id
+        .send_message(&ctx, |m| {
+            m.content("Select a story to set as main").components(|c| {
+                c.create_action_row(|row| {
+                    row.create_select_menu(|menu| {
+                        menu.custom_id("story_select");
+                        menu.placeholder("Select story");
+
+                        menu.options(|f| {
+                            let _a = available_stories
+                                .iter()
+                                .map(|story| {
+                                    f.create_option(|o| {
+                                        o.label(story.clone()).value(story.clone())
+                                    });
+                                })
+                                .collect::<Vec<_>>();
+                            f
+                        })
+                    })
+                })
+            })
+        })
+        .await
+        .unwrap();
+
+    let interaction = match message.await_component_interaction(&ctx).await {
+        Some(x) => x,
+        None => {
+            message
+                .reply(&ctx, "Interaction is now unavailable")
+                .await
+                .unwrap();
+            return Ok(());
+        }
+    };
+
+    let selected_story = &interaction.data.values[0];
+
+    let story = {
+        let story_map = story_lock.read().await;
+        let story = story_map.get(selected_story);
+
+        story.map(|s| s.clone())
+    };
 
     Ok(())
 }

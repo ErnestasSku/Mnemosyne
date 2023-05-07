@@ -30,7 +30,6 @@ impl StoryBlock {
 
         built_story = self.text.clone() + "\n";
 
-        //Leaving unwrap for now here. Note: Come back here when I now more about rust.
         for i in self.path.lock().unwrap().iter() {
             // built_story
             let command = format!("{} - {}\n", i.1, i.2);

@@ -12,13 +12,7 @@ where
 {
     error!("{}", error.into());
 
-    //TODO change this to be based on debug instead of hardcoded
-    // if isDebug {
-    if true {
-        msg.reply(ctx, error.into()).await?;
-    } else {
-        msg.react(ctx, '❌').await?;
-    }
+    msg.react(ctx, '❌').await?;
 
     Ok(())
 }
