@@ -11,6 +11,7 @@ use tracing::{debug, error, info};
 use crate::story::story_builder::map_stories_p;
 use crate::story::story_structs::{StoryBlock, StoryContainer};
 use crate::utilities::error_reporting::bot_inform_command_error;
+use crate::utilities::response_builder::MnemosyneResponseBuilder;
 use crate::utilities::type_map_builder::DataAccessBuilder;
 
 #[derive(Debug, Clone)]
@@ -391,7 +392,26 @@ async fn set_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
         story.map(|s| s.clone())
     };
 
-    Ok(())
+    let mut bot_response_builder = MnemosyneResponseBuilder::new(&ctx, &msg);
+
+    match story {
+        Some(story) => {
+            let mut current_story = loaded_lock.write().await;
+            current_story.replace((story.clone(), selected_story.to_owned()));
+
+            bot_response_builder = bot_response_builder
+                .set_react_mode(true)
+                .set_reaction_emoji('✔');
+        }
+        None => {
+            bot_response_builder = bot_response_builder
+                .set_react_mode(false)
+                .set_content("Failed to retrieve this story from loaded story map");
+        }
+    }
+
+    let bot_response = bot_response_builder.build();
+    bot_response.respond().await
 }
 
 #[command]

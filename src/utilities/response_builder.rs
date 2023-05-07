@@ -4,7 +4,9 @@ use serenity::{
     prelude::Context,
 };
 
-struct MnemosyneResponseBuilder<'a> {
+// NOTE: Consider modifying this to make it into Type
+// builder, and/or non-consuming builder.
+pub struct MnemosyneResponseBuilder<'a> {
     ctx: &'a Context,
     msg: &'a Message,
     react: Option<bool>,
@@ -13,7 +15,7 @@ struct MnemosyneResponseBuilder<'a> {
     reaction_emoji: Option<char>,
 }
 
-struct MnemosyneResponse<'a> {
+pub struct MnemosyneResponse<'a> {
     pub ctx: &'a Context,
     pub msg: &'a Message,
     pub react: bool,
