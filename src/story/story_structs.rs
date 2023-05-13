@@ -3,9 +3,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use serenity::builder::{CreateComponents, CreateMessage};
+
 use super::story_parser::StoryParse;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StoryBlock {
     pub id: String,
     pub text: String,
@@ -37,6 +39,28 @@ impl StoryBlock {
         }
 
         built_story
+    }
+
+    pub fn present_interactive(&self) -> (String, CreateComponents) {
+        // let ret = CreateMessage::default()
+        let components = CreateComponents::default()
+            // .content("test content")
+            // .components(|c| {
+            .create_action_row(|row| {
+                for i in self.path.lock().unwrap().iter() {
+                    row.create_button(|button| {
+                        button.custom_id(i.1.clone());
+                        button.label(i.2.clone());
+                        button
+                    });
+                }
+                row
+            })
+            .to_owned();
+
+        // .to_owned();
+
+        (self.text.clone(), components)
     }
 
     pub fn story_to_list_unique(

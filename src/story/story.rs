@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
+use serenity::builder::CreateMessage;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::interaction::InteractionResponseType;
@@ -82,6 +83,103 @@ async fn start_story(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     msg.reply(ctx, response).await?;
+
+    Ok(())
+}
+
+#[command]
+#[aliases("st")]
+async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let _argument = args.single::<String>();
+
+    let access = {
+        let data_read = ctx.data.read().await;
+
+        DataAccessBuilder::new(&data_read)
+            .get_user_lock()
+            .get_loaded_lock()
+            .get_story_lock()
+            .build()
+    };
+
+    if access.user_lock.is_none() {
+        bot_inform_command_error(ctx, msg, "Could not get user lock").await?
+    }
+
+    if access.loaded_story_lock.is_none() {
+        bot_inform_command_error(ctx, msg, "Could not get loaded lock").await?
+    }
+
+    let (user_lock, loaded_lock) = (
+        access.user_lock.expect("Impossible to fail"),
+        access.loaded_story_lock.expect("Impossible to fail"),
+    );
+
+    let mut story = {
+        let story = loaded_lock.read().await;
+        let (story, story_name) = story.as_ref().cloned().unwrap();
+
+        let mut user_map = user_lock.write().await;
+        let new_story = StoryListener::new(&story, &story_name);
+        user_map.insert(msg.author.id, new_story.clone());
+        new_story.current_story_path
+    };
+
+    println!("Does dis work?");
+    let mut new_msg;
+    while let Some(st) = story {
+        // let mut new_msg_component = st.present_interactive();
+        // new_msg_component.set_components(components)
+
+        // println!("{:?}", new_msg_component);
+        // println!("\n");
+
+        new_msg = msg
+            .channel_id
+            .send_message(&ctx, |a| {
+                // let mut a = st.present_interactive();
+                // &mut new_msg_component
+                // let c = a.content("test");
+                // println!("{c:?}");
+                // c
+                let (txt, cmp) = st.present_interactive();
+                let tmp = a.content(txt).set_components(cmp);
+                println!("{tmp:?}");
+                tmp
+            })
+            .await
+            .unwrap();
+        // .send_message(&ctx, |a| a.content("test"))
+        // .await
+        // .unwrap();
+
+        let interaction = match new_msg.await_component_interaction(&ctx).await {
+            Some(x) => x,
+            None => {
+                return Ok(());
+            }
+        };
+
+        interaction
+            .create_interaction_response(ctx, |r| {
+                r.kind(InteractionResponseType::UpdateMessage)
+                    .interaction_response_data(|d| d.components(|c| c))
+            })
+            .await
+            .unwrap();
+
+        println!("Interaction: {:?}", interaction.data);
+
+        let next_step = get_action_response_2(
+            user_lock.clone(),
+            msg.author.id,
+            interaction.data.values[0].as_str(),
+        )
+        .await;
+
+        println!("First iteration is done: {:?}", next_step);
+        story = None;
+    }
 
     Ok(())
 }
@@ -171,6 +269,68 @@ async fn get_action_response(
                 Ok(message.present())
             } else {
                 Ok(String::from(""))
+            }
+        }
+        None => Err(String::from("New user value was none")),
+    }
+}
+
+async fn get_action_response_2(
+    user_lock: Arc<RwLock<HashMap<UserId, StoryListener>>>,
+    author_id: UserId,
+    command_name: &str,
+) -> std::result::Result<Option<Arc<StoryBlock>>, String> {
+    let mut user_map = user_lock.write().await;
+    let user = user_map.get(&author_id);
+
+    let new_user_value = match user {
+        None => Err(String::from("User hasn't started the story yet"))?,
+        Some(user_prime) => {
+            let mut index = -1;
+            let current_story = &user_prime.story_name.clone();
+            match &user_prime.current_story_path {
+                None => Err(String::from("Story doesn't have paths"))?,
+                Some(val) => {
+                    for (i, data) in val.path.lock().unwrap().iter().enumerate() {
+                        if data.1 == command_name {
+                            index = i as i32;
+                        }
+                    }
+
+                    if index == -1 {
+                        Err(String::default())?
+                    } else {
+                        Some(StoryListener::new(
+                            &val.path
+                                .lock()
+                                .unwrap()
+                                .get(index as usize)
+                                .expect("Story path should always have an index")
+                                .0,
+                            current_story,
+                        ))
+                    }
+                }
+            }
+        }
+    };
+
+    let temp = new_user_value.clone();
+    user_map.insert(
+        author_id.to_owned(),
+        new_user_value.expect("is_some used, should never fail unwrapping"),
+    );
+
+    match temp {
+        Some(st) => {
+            if let Some(message) = &st.current_story_path {
+                let message = message.to_owned();
+                // let res = message.present_interactive();
+                Ok(Some(message))
+                // Ok(message.present())
+            } else {
+                // Ok(String::from(""))
+                Ok(None)
             }
         }
         None => Err(String::from("New user value was none")),

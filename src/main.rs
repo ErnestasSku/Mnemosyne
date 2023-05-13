@@ -56,7 +56,8 @@ struct General;
     read_loaded,
     set_story,
     clear_story,
-    set_story_new
+    set_story_new,
+    start_story_new
 )]
 #[prefixes("story", "s")]
 #[description = "Commands related to the stories"]
