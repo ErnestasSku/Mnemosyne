@@ -143,7 +143,13 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 // println!("{c:?}");
                 // c
                 let (txt, cmp) = st.present_interactive();
-                let tmp = a.content(txt).set_components(cmp);
+                println!("A-Component: {cmp:?}");
+
+                let mut tmp = a.content(txt);
+                tmp = match cmp {
+                    Some(c) => tmp.set_components(c),
+                    None => tmp,
+                };
                 println!("{tmp:?}");
                 tmp
             })
@@ -160,6 +166,9 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
             }
         };
 
+        // println!("");
+        info!("Before create interaction.");
+
         interaction
             .create_interaction_response(ctx, |r| {
                 r.kind(InteractionResponseType::UpdateMessage)
@@ -173,12 +182,22 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         let next_step = get_action_response_2(
             user_lock.clone(),
             msg.author.id,
-            interaction.data.values[0].as_str(),
+            // interaction.data.values[0].as_str(),
+            &interaction.data.custom_id,
         )
         .await;
 
-        println!("First iteration is done: {:?}", next_step);
-        story = None;
+        // println!("First iteration is done: {:?}", next_step);
+        // story = None;
+        match next_step {
+            Ok(s) => {
+                story = s;
+            }
+            Err(e) => {
+                println!("Got error: {e:?}");
+                story = None;
+            }
+        }
     }
 
     Ok(())

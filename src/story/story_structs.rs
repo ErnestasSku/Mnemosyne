@@ -41,8 +41,13 @@ impl StoryBlock {
         built_story
     }
 
-    pub fn present_interactive(&self) -> (String, CreateComponents) {
+    pub fn present_interactive(&self) -> (String, Option<CreateComponents>) {
         // let ret = CreateMessage::default()
+
+        if self.path.lock().unwrap().len() == 0 {
+            return (self.text.clone(), None);
+        }
+
         let components = CreateComponents::default()
             // .content("test content")
             // .components(|c| {
@@ -60,7 +65,7 @@ impl StoryBlock {
 
         // .to_owned();
 
-        (self.text.clone(), components)
+        (self.text.clone(), Some(components))
     }
 
     pub fn story_to_list_unique(
