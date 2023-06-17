@@ -125,9 +125,12 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     };
 
     let mut new_msg;
+    let new_thread = msg
+        .channel_id
+        .create_public_thread(ctx, msg.id, |x| x.name("Story"))
+        .await?;
     while let Some(st) = story {
-        new_msg = msg
-            .channel_id
+        new_msg = new_thread
             .send_message(&ctx, |a| {
                 let (txt, cmp) = st.present_interactive();
 
