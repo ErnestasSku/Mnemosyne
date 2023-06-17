@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use serenity::builder::{CreateComponents, CreateMessage};
+use serenity::builder::CreateComponents;
 
 use super::story_parser::StoryParse;
 

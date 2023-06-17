@@ -1,8 +1,4 @@
-use serenity::{
-    framework::standard::CommandResult,
-    model::prelude::{Message, ReactionType},
-    prelude::Context,
-};
+use serenity::{framework::standard::CommandResult, model::prelude::Message, prelude::Context};
 
 pub struct MnemosyneResponseBuilder<'a> {
     ctx: &'a Context,
@@ -42,8 +38,8 @@ impl<'a> MnemosyneResponse<'a> {
 impl<'a> MnemosyneResponseBuilder<'a> {
     pub fn new(ctx: &'a Context, msg: &'a Message) -> Self {
         MnemosyneResponseBuilder {
-            ctx: ctx,
-            msg: msg,
+            ctx,
+            msg,
             react: None,
             content: None,
             sendable: false,
@@ -73,7 +69,7 @@ impl<'a> MnemosyneResponseBuilder<'a> {
             ctx: self.ctx,
             msg: self.msg,
             react: self.react.unwrap_or(false),
-            content: self.content.unwrap_or(String::from("")),
+            content: self.content.unwrap_or_else(|| String::from("")),
             sendable: self.sendable,
             reaction_emoji: self.reaction_emoji.unwrap_or('🐛'),
         }

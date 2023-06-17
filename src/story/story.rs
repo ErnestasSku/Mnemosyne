@@ -2,13 +2,12 @@ use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
-use serenity::builder::CreateMessage;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::prelude::interaction::InteractionResponseType;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 
 use crate::story::story_builder::map_stories_p;
 use crate::story::story_structs::{StoryBlock, StoryContainer};
@@ -142,7 +141,7 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
             .await
             .unwrap();
 
-        let interaction = match new_msg.await_component_interaction(&ctx).await {
+        let interaction = match new_msg.await_component_interaction(ctx).await {
             Some(x) => x,
             None => {
                 return Ok(());
@@ -521,7 +520,7 @@ async fn set_story_new(ctx: &Context, msg: &Message) -> CommandResult {
         .await
         .unwrap();
 
-    let interaction = match message.await_component_interaction(&ctx).await {
+    let interaction = match message.await_component_interaction(ctx).await {
         Some(x) => x,
         None => {
             message
@@ -538,10 +537,10 @@ async fn set_story_new(ctx: &Context, msg: &Message) -> CommandResult {
         let story_map = story_lock.read().await;
         let story = story_map.get(selected_story);
 
-        story.map(|s| s.clone())
+        story.cloned()
     };
 
-    let mut bot_response_builder = MnemosyneResponseBuilder::new(&ctx, &message);
+    let mut bot_response_builder = MnemosyneResponseBuilder::new(ctx, &message);
 
     match story {
         Some(story) => {
