@@ -168,7 +168,7 @@ async fn run_informer() {
     let informer = update_informer::new(
         registry::GitHub,
         "https://github.com/ErnestasSku/Mnemosyne",
-        "0.1.0",
+        "0.2.0",
     );
 
     if let Some(version) = informer.check_version().ok().flatten() {
