@@ -128,36 +128,23 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
     println!("Does dis work?");
     let mut new_msg;
     while let Some(st) = story {
-        // let mut new_msg_component = st.present_interactive();
-        // new_msg_component.set_components(components)
-
-        // println!("{:?}", new_msg_component);
-        // println!("\n");
 
         new_msg = msg
             .channel_id
             .send_message(&ctx, |a| {
-                // let mut a = st.present_interactive();
-                // &mut new_msg_component
-                // let c = a.content("test");
-                // println!("{c:?}");
-                // c
                 let (txt, cmp) = st.present_interactive();
                 println!("A-Component: {cmp:?}");
 
                 let mut tmp = a.content(txt);
                 tmp = match cmp {
                     Some(c) => tmp.set_components(c),
+                    println!("{tmp:?}");
                     None => tmp,
                 };
-                println!("{tmp:?}");
                 tmp
             })
             .await
             .unwrap();
-        // .send_message(&ctx, |a| a.content("test"))
-        // .await
-        // .unwrap();
 
         let interaction = match new_msg.await_component_interaction(&ctx).await {
             Some(x) => x,
@@ -166,7 +153,6 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
             }
         };
 
-        // println!("");
         info!("Before create interaction.");
 
         interaction
@@ -182,13 +168,10 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         let next_step = get_action_response_2(
             user_lock.clone(),
             msg.author.id,
-            // interaction.data.values[0].as_str(),
             &interaction.data.custom_id,
         )
         .await;
 
-        // println!("First iteration is done: {:?}", next_step);
-        // story = None;
         match next_step {
             Ok(s) => {
                 story = s;
@@ -230,9 +213,6 @@ async fn action(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         Err(m) => msg.reply(ctx, m).await?,
     };
 
-    // if !response.is_empty() {
-    //     msg.reply(ctx, response).await?;
-    // }
     Ok(())
 }
 
@@ -344,11 +324,8 @@ async fn get_action_response_2(
         Some(st) => {
             if let Some(message) = &st.current_story_path {
                 let message = message.to_owned();
-                // let res = message.present_interactive();
                 Ok(Some(message))
-                // Ok(message.present())
             } else {
-                // Ok(String::from(""))
                 Ok(None)
             }
         }

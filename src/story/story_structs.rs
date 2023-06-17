@@ -42,15 +42,11 @@ impl StoryBlock {
     }
 
     pub fn present_interactive(&self) -> (String, Option<CreateComponents>) {
-        // let ret = CreateMessage::default()
-
         if self.path.lock().unwrap().len() == 0 {
             return (self.text.clone(), None);
         }
 
         let components = CreateComponents::default()
-            // .content("test content")
-            // .components(|c| {
             .create_action_row(|row| {
                 for i in self.path.lock().unwrap().iter() {
                     row.create_button(|button| {
@@ -62,8 +58,6 @@ impl StoryBlock {
                 row
             })
             .to_owned();
-
-        // .to_owned();
 
         (self.text.clone(), Some(components))
     }

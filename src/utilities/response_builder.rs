@@ -4,8 +4,6 @@ use serenity::{
     prelude::Context,
 };
 
-// NOTE: Consider modifying this to make it into Type
-// builder, and/or non-consuming builder.
 pub struct MnemosyneResponseBuilder<'a> {
     ctx: &'a Context,
     msg: &'a Message,
