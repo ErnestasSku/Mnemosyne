@@ -125,20 +125,16 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
         new_story.current_story_path
     };
 
-    println!("Does dis work?");
     let mut new_msg;
     while let Some(st) = story {
-
         new_msg = msg
             .channel_id
             .send_message(&ctx, |a| {
                 let (txt, cmp) = st.present_interactive();
-                println!("A-Component: {cmp:?}");
 
                 let mut tmp = a.content(txt);
                 tmp = match cmp {
                     Some(c) => tmp.set_components(c),
-                    println!("{tmp:?}");
                     None => tmp,
                 };
                 tmp
@@ -163,7 +159,7 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
             .await
             .unwrap();
 
-        println!("Interaction: {:?}", interaction.data);
+        info!("Interaction: {:?}", interaction.data);
 
         let next_step = get_action_response_2(
             user_lock.clone(),
@@ -177,7 +173,7 @@ async fn start_story_new(ctx: &Context, msg: &Message, mut args: Args) -> Comman
                 story = s;
             }
             Err(e) => {
-                println!("Got error: {e:?}");
+                error!("Got error: {e:?}");
                 story = None;
             }
         }
