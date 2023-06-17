@@ -3,9 +3,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use serenity::builder::CreateComponents;
+
 use super::story_parser::StoryParse;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StoryBlock {
     pub id: String,
     pub text: String,
@@ -30,7 +32,6 @@ impl StoryBlock {
 
         built_story = self.text.clone() + "\n";
 
-        //Leaving unwrap for now here. Note: Come back here when I now more about rust.
         for i in self.path.lock().unwrap().iter() {
             // built_story
             let command = format!("{} - {}\n", i.1, i.2);
@@ -38,6 +39,27 @@ impl StoryBlock {
         }
 
         built_story
+    }
+
+    pub fn present_interactive(&self) -> (String, Option<CreateComponents>) {
+        if self.path.lock().unwrap().len() == 0 {
+            return (self.text.clone(), None);
+        }
+
+        let components = CreateComponents::default()
+            .create_action_row(|row| {
+                for i in self.path.lock().unwrap().iter() {
+                    row.create_button(|button| {
+                        button.custom_id(i.1.clone());
+                        button.label(i.2.clone());
+                        button
+                    });
+                }
+                row
+            })
+            .to_owned();
+
+        (self.text.clone(), Some(components))
     }
 
     pub fn story_to_list_unique(

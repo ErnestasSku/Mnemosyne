@@ -22,3 +22,20 @@ pub async fn info(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+#[command]
+pub async fn test(ctx: &Context, msg: &Message) -> CommandResult {
+    let _ = msg
+        .channel_id
+        .send_message(&ctx, |a| {
+            a.embed(|e| {
+                e.title("Loaded stories").fields(vec![
+                    ("Test", "Test \n asd \nasd", true),
+                    ("Test", "T", false),
+                ])
+            })
+        })
+        .await;
+
+    Ok(())
+}

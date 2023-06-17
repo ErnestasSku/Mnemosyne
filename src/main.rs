@@ -4,6 +4,7 @@ mod utilities;
 
 use std::collections::{HashMap, HashSet};
 use std::env;
+use std::path::Path;
 use std::sync::Arc;
 
 use serenity::async_trait;
@@ -17,6 +18,8 @@ use serenity::model::event::ResumedEvent;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::{Message, UserId};
 use serenity::prelude::*;
+use std::fs;
+use story::story_builder::map_stories_p;
 use story::story_structs::StoryContainer;
 use tracing::{error, info};
 use update_informer::{registry, Check};
@@ -42,11 +45,20 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(info, action, multiply, quit)]
+#[commands(info, action, multiply, quit, test)]
 struct General;
 
 #[group]
-#[commands(start_story, action, load, read_loaded, set_story, clear_story)]
+#[commands(
+    start_story,
+    action,
+    load,
+    read_loaded,
+    set_story,
+    clear_story,
+    set_story_new,
+    start_story_new
+)]
 #[prefixes("story", "s")]
 #[description = "Commands related to the stories"]
 #[default_command(action)]
@@ -54,11 +66,13 @@ struct Story;
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt().init();
     run_informer().await;
-    run_bot().await;
+    let startup_story_files = check_directory().await;
+    run_bot(startup_story_files).await;
 }
 
-async fn run_bot() {
+async fn run_bot(startup_story_files: Option<Vec<String>>) {
     dotenv::dotenv().expect("Failed to load .env file");
     let token = env::var("TOKEN").expect("Expected a token in the environment");
     let http = Http::new(&token);
@@ -86,7 +100,7 @@ async fn run_bot() {
         .await
         .expect("Err creating client");
 
-    setup_data(&client).await;
+    setup_data(&client, startup_story_files).await;
 
     let shard_manager = client.shard_manager.clone();
 
@@ -103,11 +117,58 @@ async fn run_bot() {
     }
 }
 
+async fn check_directory() -> Option<Vec<String>> {
+    let current_directory = env::current_dir().ok()?;
+
+    let mut stories_directory = current_directory.clone();
+    stories_directory.push("stories");
+
+    let f1: Option<Vec<String>> = scan_directory(&current_directory);
+    let f2: Option<Vec<String>> = scan_directory(&stories_directory);
+
+    combine_file_paths(f1, f2)
+}
+
+fn combine_file_paths(f1: Option<Vec<String>>, f2: Option<Vec<String>>) -> Option<Vec<String>> {
+    if f1.is_none() && f2.is_some() {
+        f2
+    } else if f2.is_none() && f1.is_some() {
+        f1
+    } else {
+        f1.and_then(|r1| {
+            f2.map(|r2| {
+                r1.into_iter()
+                    .chain(r2.into_iter())
+                    .collect::<Vec<String>>()
+            })
+        })
+    }
+}
+
+fn scan_directory(path: &dyn AsRef<Path>) -> Option<Vec<String>> {
+    let mut files = Vec::new();
+    let directory = fs::read_dir(path).ok()?;
+
+    for dir_entry in directory.flatten() {
+        let file_path = dir_entry.path();
+
+        if let Some(ext) = file_path.extension() {
+            if ext.eq_ignore_ascii_case("story") {
+                if let Some(file_path_str) = file_path.to_str() {
+                    files.push(file_path_str.to_owned());
+                }
+            }
+        }
+    }
+
+    Some(files)
+}
+
 async fn run_informer() {
     let informer = update_informer::new(
         registry::GitHub,
         "https://github.com/ErnestasSku/Mnemosyne",
-        "0.1.0",
+        "0.2.0",
     );
 
     if let Some(version) = informer.check_version().ok().flatten() {
@@ -115,12 +176,39 @@ async fn run_informer() {
     }
 }
 
-async fn setup_data(client: &Client) {
+async fn setup_data(client: &Client, startup_story_files: Option<Vec<String>>) {
     let mut data = client.data.write().await;
     data.insert::<ShardManagerContainer>(client.shard_manager.clone());
-    data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
     data.insert::<StoryListenerContainer>(Arc::new(RwLock::new(HashMap::default())));
     data.insert::<LoadedStoryContainer>(Arc::new(RwLock::new(None)));
+
+    info!("Setup info");
+    if let Some(files) = startup_story_files {
+        let stories = parse_stories(&files);
+        info!("Inserting {} stories", &stories.len());
+        data.insert::<StoryContainer>(Arc::new(RwLock::new(stories)));
+    } else {
+        data.insert::<StoryContainer>(Arc::new(RwLock::new(HashMap::default())));
+    }
+}
+
+fn parse_stories(files: &[String]) -> HashMap<String, Arc<story::story_structs::StoryBlock>> {
+    let mut counter = 0;
+    files
+        .iter()
+        .filter_map(|f| {
+            let file_path = Path::new(f).to_owned();
+            let name = file_path.file_stem()?;
+            let story = map_stories_p(f).ok()?;
+            let name_str = name.to_str().map(String::from).unwrap_or_else(|| {
+                format!("default-{}", {
+                    counter += 1;
+                    counter - 1
+                })
+            });
+            Some((name_str, story))
+        })
+        .collect()
 }
 
 #[help]
